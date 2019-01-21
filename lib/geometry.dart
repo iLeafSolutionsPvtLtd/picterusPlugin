@@ -46,3 +46,27 @@ class Size {
         return {'width': width, 'height': height};
     }
 }
+
+class Rect {
+    Point origin;
+    Size size;
+
+    Rect(Point origin, Size size) {
+        this.origin = origin;
+        this.size = size;
+    }
+
+    Rect.init() {
+        this.origin = Point.init();
+        this.size = Size.init();
+    }
+
+    Rect.fromMap(Map<dynamic, dynamic> data) {
+        origin = Point.fromMap(data['origin']);
+        size = Size.fromMap(data['size']);
+    }
+
+    Map<String, dynamic> get toMap {
+        return {'origin': origin.toMap, 'size': size.toMap};
+    }
+}
