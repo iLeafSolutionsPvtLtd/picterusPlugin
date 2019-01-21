@@ -37,6 +37,7 @@ class _MyAppState extends State<MyApp> {
                     text += 'Back ';
                 }
             }
+            text += '\n';
             for (final size in sizes) {
                 text += size.width.toString();
                 text += ' ';
@@ -62,7 +63,11 @@ class _MyAppState extends State<MyApp> {
                                 title: const Text('Camera sample'),
                         ),
                         body: Center(
-                                child: Text('Available cameras: $_text\n'),
+                                child: Text(_text,
+                                        style: TextStyle(
+                                                color: Colors.red.withOpacity(0.8),
+                                                fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center),
                         ),
                 ),
         );

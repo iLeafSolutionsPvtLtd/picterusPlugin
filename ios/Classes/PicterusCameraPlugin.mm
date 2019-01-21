@@ -10,15 +10,13 @@
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
-    if ([@"getPlatformVersion" isEqualToString:call.method]) {
-       result([@"iOS " stringByAppendingString:[[UIDevice currentDevice] systemVersion]]);
-    } else if ([@"getCameras" isEqualToString:call.method]) {
+    if ([@"cameras" isEqualToString:call.method]) {
         NSMutableArray<NSString *> *reply =
             [[NSMutableArray alloc] initWithCapacity:2];
         [reply addObject:@"front"];
         [reply addObject:@"back"];
         result(reply);
-    } else if ([@"getSizes" isEqualToString:call.method]) {
+    } else if ([@"sizes" isEqualToString:call.method]) {
         NSMutableArray<NSDictionary<NSString*, NSNumber*>*> *reply =
             [[NSMutableArray alloc] initWithCapacity:2];
         [reply addObject:@{ @"width" : @720.0, @"height" : @480.0 }];

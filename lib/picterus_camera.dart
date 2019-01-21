@@ -68,7 +68,7 @@ class PicterusCamera {
 
     static Future<List<CameraPosition>> get cameras async {
         try {
-            final List<dynamic> cs = await _channel.invokeMethod('getCameras');
+            final List<dynamic> cs = await _channel.invokeMethod('cameras');
             return cs.map((dynamic camera) {
                 return _fromString(camera);
             }).toList();
@@ -79,7 +79,7 @@ class PicterusCamera {
 
     static Future<List<Size>> get previewSizes async {
         try {
-            final List<dynamic> ss = await _channel.invokeMethod('getSizes');
+            final List<dynamic> ss = await _channel.invokeMethod('sizes');
             return ss.map((dynamic size) {
                 return Size.fromMap(size);
             }).toList();
