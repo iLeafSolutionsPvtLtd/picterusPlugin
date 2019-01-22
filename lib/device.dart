@@ -7,13 +7,16 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 class Device {
-    Device.front() : _isFront = true {
+    Device.front() 
+            : _isFront = true {
     }
 
-    Device.back() : _isFront = false {
+    Device.back() 
+            : _isFront = false {
     }
 
-    Device.fromNative(String s) : _isFront = s == 'front' ? true : false {
+    Device.fromNative(String s) 
+            : _isFront = s == 'front' ? true : false {
     }
 
     String get toNative {
