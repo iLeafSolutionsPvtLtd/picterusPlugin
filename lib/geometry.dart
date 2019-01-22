@@ -1,4 +1,3 @@
-
 class Point {
     double x;
     double y;
@@ -13,12 +12,12 @@ class Point {
         this.y = 0;
     }
 
-    Point.fromMap(Map<dynamic, dynamic> data) {
+    Point.fromNative(Map<dynamic, dynamic> data) {
         x = data['x'];
         y = data['y'];
     }
 
-    Map<String, double> get toMap {
+    Map<String, double> get toNative {
         return {'x': x, 'y': y};
     }
 }
@@ -37,12 +36,12 @@ class Size {
         this.height = 0;
     }
 
-    Size.fromMap(Map<dynamic, dynamic> data) {
+    Size.fromNative(Map<dynamic, dynamic> data) {
         width = data['width'];
         height = data['height'];
     }
 
-    Map<String, double> get toMap {
+    Map<String, double> get toNative {
         return {'width': width, 'height': height};
     }
 }
@@ -61,12 +60,12 @@ class Rect {
         this.size = Size.init();
     }
 
-    Rect.fromMap(Map<dynamic, dynamic> data) {
+    Rect.fromNative(Map<dynamic, dynamic> data) {
         origin = Point.fromMap(data['origin']);
         size = Size.fromMap(data['size']);
     }
 
-    Map<String, dynamic> get toMap {
-        return {'origin': origin.toMap, 'size': size.toMap};
+    Map<String, dynamic> get toNative {
+        return {'origin': origin.toNative, 'size': size.toNative};
     }
 }

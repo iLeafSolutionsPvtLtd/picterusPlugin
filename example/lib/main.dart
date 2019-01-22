@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:picterus_camera/picterus_camera.dart';
+import 'package:picterus_camera/device.dart';
 
 void main() => runApp(MyApp());
 
@@ -21,28 +21,19 @@ class _MyAppState extends State<MyApp> {
     }
 
     Future<void> initPlatformState() async {
-        String text = "";
+        String text = '';
         try {
-            final cameras = await PicterusCamera.cameras;
-            final sizes = await PicterusCamera.previewSizes;
-            final camera = PicterusCamera();
-            CameraConfiguration config = CameraConfiguration();
-            config.position = cameras[0];
-            config.previewSize = sizes[0];
-            camera.initialize(config);
-            for (final camera in cameras) {
-                if (camera == CameraPosition.front) {
-                    text += 'Front ';
-                } else {
-                    text += 'Back ';
+            final devices = await Device.devices;
+            for (final device in devices) {
+                text += device.toNative;
+                text += '\n';
+                final sizes = await device.sizes;
+                for (final size in sizes) {
+                    text += size.width.toString();
+                    text += ' ';
+                    text += size.height.toString();
+                    text += '\n';
                 }
-            }
-            text += '\n';
-            for (final size in sizes) {
-                text += size.width.toString();
-                text += ' ';
-                text += size.height.toString();
-                text += ' ';
             }
         } on PlatformException {
             text = 'Failed to get platform version.';
