@@ -25,7 +25,7 @@ class Device {
 
     Future<List<Size>> get sizes async {
         try {
-            final List<dynamic> ss = await native_bridge.instance.invokeMethod('sizes', this.toNative);
+            final List<dynamic> ss = await NativeBridge.instance.invokeMethod('sizes', this.toNative);
             return ss.map((dynamic size) {
                 return Size.fromNative(size);
             }).toList();
@@ -36,7 +36,7 @@ class Device {
 
     static Future<List<Device>> get devices async {
         try {
-            final List<dynamic> ds = await native_bridge.instance.invokeMethod('devices');
+            final List<dynamic> ds = await NativeBridge.instance.invokeMethod('devices');
             return ds.map((dynamic device) {
                 return Device.fromNative(device);
             }).toList();
