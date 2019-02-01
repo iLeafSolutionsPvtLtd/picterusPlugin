@@ -119,6 +119,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                         if (s.equals("back")) {
                             return id;
                         }
+                        break;
                     case CameraMetadata.LENS_FACING_FRONT:
                         if (s.equals("front")) {
                             return id;
