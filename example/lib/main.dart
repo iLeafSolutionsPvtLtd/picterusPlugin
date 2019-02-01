@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:picterus_camera/device.dart';
+
 import 'package:picterus_camera/camera.dart';
-import 'package:picterus_camera/configuration.dart';
 
 void main() => runApp(MyApp());
 
@@ -26,8 +25,6 @@ class _MyAppState extends State<MyApp> {
         String text = '';
         try {
             final devices = await Device.devices;
-            final camera = Camera(PreviewConfiguration.device(devices[0]));
-            camera.updateConfiguration(camera.currentConfiguration.copyWith(device: devices[1]));
             for (final device in devices) {
                 text += device.toNative;
                 text += '\n';
@@ -36,6 +33,11 @@ class _MyAppState extends State<MyApp> {
                     text += size.width.toString();
                     text += ' ';
                     text += size.height.toString();
+                    text += '\n';
+                }
+                final modes = await device.flashlightModes;
+                for (final mode in modes) {
+                    text += mode.toNative;
                     text += '\n';
                 }
             }

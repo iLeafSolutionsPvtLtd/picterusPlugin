@@ -1,4 +1,4 @@
-import 'package:flutter/services.dart';
+part of '../camera.dart';
 
 class NativeBridge {
 

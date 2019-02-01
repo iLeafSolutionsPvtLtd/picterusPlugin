@@ -1,3 +1,5 @@
+part of 'camera.dart';
+
 class CameraException implements Exception {
     CameraException(this.code, this.description);
 

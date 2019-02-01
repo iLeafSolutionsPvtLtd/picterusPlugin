@@ -1,23 +1,11 @@
-import 'exception.dart';
-import 'geometry.dart';
-import 'src/native_bridge.dart';
-
-import 'dart:async';
-
-import 'package:flutter/services.dart';
+part of 'camera.dart';
 
 class Device {
-    Device.front() 
-            : _isFront = true {
-    }
+    Device.front() : _isFront = true;
 
-    Device.back() 
-            : _isFront = false {
-    }
+    Device.back() : _isFront = false;
 
-    Device.fromNative(String s) 
-            : _isFront = s == 'front' ? true : false {
-    }
+    Device.fromNative(String s) : _isFront = s == 'front' ? true : false;
 
     String get toNative {
         return _isFront == true ? 'front' : 'back';
@@ -28,6 +16,17 @@ class Device {
             final List<dynamic> ss = await NativeBridge.instance.invokeMethod('sizes', this.toNative);
             return ss.map((dynamic size) {
                 return Size.fromNative(size);
+            }).toList();
+        } on PlatformException catch (e) {
+            throw CameraException(e.code, e.message);
+        }
+    }
+
+    Future<List<FlashlightMode>> get flashlightModes async {
+        try {
+            final List<dynamic> fs = await NativeBridge.instance.invokeMethod('flashlightModes', this.toNative);
+            return fs.map((dynamic mode) {
+                return FlashlightMode.fromNative(mode);
             }).toList();
         } on PlatformException catch (e) {
             throw CameraException(e.code, e.message);

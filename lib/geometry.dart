@@ -1,11 +1,10 @@
+part of 'camera.dart';
+
 class Point {
     double x;
     double y;
 
-    Point(double x, double y)
-        : this.x = x
-        , this.y = y {
-    }
+    Point(this.x, this.y);
 
     Point.zero() : this(0, 0);
 
@@ -20,10 +19,7 @@ class Size {
     double width;
     double height;
 
-    Size(double width, double height) 
-            : this.width = width
-            , this.height = height {
-    }
+    Size(this.width, this.height);
 
     Size.zero() : this(0, 0);
 
@@ -38,10 +34,7 @@ class Rect {
     Point origin;
     Size size;
 
-    Rect(Point origin, Size size) 
-            : this.origin = origin
-            , this.size = size {
-    }
+    Rect(this.origin, this.size);
 
     Rect.zero() : this(Point.zero(), Size.zero());
 

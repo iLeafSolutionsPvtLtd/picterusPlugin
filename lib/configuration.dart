@@ -1,18 +1,11 @@
-import 'src/native_bridge.dart';
-import 'device.dart';
-import 'geometry.dart';
+part of 'camera.dart';
 
 class PreviewConfiguration {
     Device device;
     Size size;
     bool autofocus;
 
-    PreviewConfiguration(Device device, Size size, bool autofocus)
-            : this.device = device
-            , this.size = size
-            , this.autofocus = autofocus 
-    {
-    }
+    PreviewConfiguration(this.device, this.size, this.autofocus);
 
     PreviewConfiguration.device(Device device) : this(device, Size.zero(), true);
 
@@ -37,17 +30,13 @@ class PreviewConfiguration {
 }
 
 class FlashlightMode {
-    FlashlightMode.on() : _value = 'on' {
-    }
+    FlashlightMode.on() : _value = 'on';
 
-    FlashlightMode.off() : _value = 'off' {
-    }
+    FlashlightMode.off() : _value = 'off';
 
-    FlashlightMode.auto() : _value = 'auto' {
-    }
+    FlashlightMode.auto() : _value = 'auto';
 
-    FlashlightMode.fromNative(String s) : _value = s {
-    }
+    FlashlightMode.fromNative(String s) : _value = s;
 
     String get toNative {
         return _value;
@@ -61,12 +50,7 @@ class CaptureConfiguration {
     FlashlightMode flashlightMode;
     String path;
 
-    CaptureConfiguration(Size size, FlashlightMode flashlightMode, String path)
-            : this.size = size
-            , this.flashlightMode = flashlightMode
-            , this.path = path 
-    {
-    }
+    CaptureConfiguration(this.size, this.flashlightMode, this.path);
 
     CaptureConfiguration.path(String path) : this(Size.zero(), FlashlightMode.auto(), path);
 
