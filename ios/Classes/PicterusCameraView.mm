@@ -1,11 +1,9 @@
 #import "PicterusCameraView.h"
-
-#import <AVFoundation/AVFoundation.h>
+#import "PicterusCameraPlugin.h"
 
 @interface PicterusCameraView()
 {
-@private AVCaptureVideoPreviewLayer* videoPreview_;
-@private AVCaptureSession* session_;
+@private AVCaptureVideoPreviewLayer* previewLayer_;
 }
 
 @end
@@ -14,30 +12,24 @@
 
 -(id) initWithFrame:(CGRect)frame viewIdentifier:(int64_t)viewId arguments:(id)args
 {
-    self = [super initWithFrame:frame];
-    session_ = [[AVCaptureSession alloc] init];
-    session_.sessionPreset = AVCaptureSessionPreset1920x1080;
-    auto d = [AVCaptureDevice devices][0];
-    auto i = [[AVCaptureDeviceInput alloc] initWithDevice:d error:nil];
-    auto o = [AVCaptureVideoDataOutput new];
-    o.videoSettings =
-    @{(NSString *)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_32BGRA)};
-    [o setAlwaysDiscardsLateVideoFrames:YES];
-    [session_ addInput:i];
-    [session_ addOutput:o];
-    videoPreview_ = [[AVCaptureVideoPreviewLayer alloc] initWithSession:session_];
-    videoPreview_.videoGravity = AVLayerVideoGravityResizeAspect;
-    [self.layer addSublayer:videoPreview_];
-    [session_ startRunning];
-    return [super init];
+    return [super initWithFrame:frame];
 }
 
 -(UIView*) view {
     return self;
 }
 
+-(AVCaptureVideoPreviewLayer*) previewLayer {
+    return previewLayer_;
+}
+
+-(void) setPreviewLayer:(AVCaptureVideoPreviewLayer *)previewLayer {
+    previewLayer_ = previewLayer;
+    [self.layer addSublayer:previewLayer_];
+}
+
 -(void) layoutSubviews {
-    videoPreview_.frame = self.bounds;
+    previewLayer_.frame = self.bounds;
 }
 
 @end
@@ -47,7 +39,13 @@
 -(NSObject<FlutterPlatformView>*)createWithFrame:(CGRect)frame
                                   viewIdentifier:(int64_t)viewId
                                        arguments:(id)args {
-    return [[PicterusCameraView alloc] initWithFrame:frame viewIdentifier:viewId arguments:args];
+    auto r = [[PicterusCameraView alloc] initWithFrame:frame viewIdentifier:viewId arguments:args];
+    [[PicterusCameraPlugin sharedInstance] registerPreviewView:r];
+    return r;
+}
+
+- (NSObject<FlutterMessageCodec>*)createArgsCodec {
+    return [FlutterStandardMessageCodec sharedInstance];
 }
 
 @end

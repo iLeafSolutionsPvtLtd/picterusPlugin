@@ -1,15 +1,18 @@
 #import <Flutter/Flutter.h>
 #import <UIKit/UIKit.h>
+#import <AVFoundation/AVFoundation.h>
 
 @interface PicterusCameraView : UIView<FlutterPlatformView>
 {
 }
 
--(id) initWithFrame:(CGRect)frame
+-(nonnull id) initWithFrame:(CGRect)frame
      viewIdentifier:(int64_t)viewId
           arguments:(id _Nullable)args;
 
--(UIView*) view;
+-(nonnull UIView*) view;
+
+@property (nonnull) AVCaptureVideoPreviewLayer* previewLayer;
 
 @end
 
@@ -17,7 +20,7 @@
 {
 }
 
--(NSObject<FlutterPlatformView>*)createWithFrame:(CGRect)frame
+-(nonnull NSObject<FlutterPlatformView>*)createWithFrame:(CGRect)frame
                                   viewIdentifier:(int64_t)viewId
                                        arguments:(id _Nullable)args;
 @end

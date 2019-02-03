@@ -15,13 +15,13 @@ part 'geometry.dart';
 part 'image.dart';
 
 class Camera {
-    Camera(PreviewConfiguration config) : _config = config, _textureID = -1;
+    Camera(PreviewConfiguration config) : _config = config {
+        cameraView = CameraView(this);
+    }
 
     Future<void> initialize() async {
-        /// TODO
         try {
-            final Map<dynamic, dynamic> reply = await NativeBridge.instance.invokeMethod('initialize', _config.toNative);
-            _textureID = reply['texture'];
+            await NativeBridge.instance.invokeMethod('initialize', _config.toNative);
         } on PlatformException catch (e) {
             throw CameraException(e.code, e.message);
         }
@@ -41,10 +41,6 @@ class Camera {
         _config = config;
     }
 
-    Future<void> focus(Point point) async {
-        /// TODO
-    }
-
     Future<void> capture(CaptureConfiguration config) async {
         /// TODO
         try {
@@ -55,5 +51,5 @@ class Camera {
     }
 
     PreviewConfiguration _config;
-    int _textureID;
+    CameraView cameraView;
 }

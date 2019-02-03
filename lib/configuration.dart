@@ -10,13 +10,13 @@ class PreviewConfiguration {
     PreviewConfiguration.device(Device device) : this(device, Size.zero(), FocusMode.auto());
 
     PreviewConfiguration.fromNative(Map<String, dynamic> m)
-            : this(Device.fromNative(m['device']), Size.fromNative(m['size']), m['focusMode']);
+            : this(Device.fromNative(m['device']), Size.fromNative(m['size']), FocusMode.fromNative(m['focusMode']));
 
     Map<String, dynamic> get toNative {
         return <String, dynamic>{
             'device' : device.toNative,
             'size' : size.toNative,
-            'focusMode' : focusMode
+            'focusMode' : focusMode.toNative
         };
     }
 

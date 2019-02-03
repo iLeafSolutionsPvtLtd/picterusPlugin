@@ -6,13 +6,22 @@
 #include <set>
 #include <utility>
 
+static PicterusCameraPlugin* sharedInstance_ = nullptr;
+
+@interface PicterusCameraPlugin() {
+@private PicterusCameraView* preview_;
+@private AVCaptureSession* session_;
+}
+
+@end
+
 @implementation PicterusCameraPlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
     FlutterMethodChannel* channel = [FlutterMethodChannel
         methodChannelWithName:@"camera.picterus.com"
               binaryMessenger:[registrar messenger]];
-    PicterusCameraPlugin* instance = [[PicterusCameraPlugin alloc] init];
-    [registrar addMethodCallDelegate:instance channel:channel];
+    sharedInstance_ = [[PicterusCameraPlugin alloc] init];
+    [registrar addMethodCallDelegate:sharedInstance_ channel:channel];
     auto f = [[PicterusCameraViewFactory alloc] init];
     [registrar registerViewFactory:f withId:@"CameraView"];
 }
@@ -30,6 +39,18 @@ namespace {
             }
         }
         return nullptr;
+    }
+}
+
++(PicterusCameraPlugin*) sharedInstance {
+    return sharedInstance_;
+}
+
+-(void) registerPreviewView:(PicterusCameraView *)view {
+    preview_ = view;
+    if (session_ != nullptr && session_.isRunning) {
+        preview_.previewLayer = [[AVCaptureVideoPreviewLayer alloc] initWithSession:session_];
+        preview_.previewLayer.videoGravity = AVLayerVideoGravityResizeAspect;
     }
 }
 
@@ -126,7 +147,21 @@ namespace {
 }
 
 -(void) initialize:(id _Nullable)arguments result:(FlutterResult)result {
-
+    session_ = [[AVCaptureSession alloc] init];
+    session_.sessionPreset = AVCaptureSessionPresetHigh;
+    auto d = [AVCaptureDevice devices][0];
+    auto i = [[AVCaptureDeviceInput alloc] initWithDevice:d error:nil];
+    auto o = [AVCaptureVideoDataOutput new];
+    o.videoSettings =
+    @{(NSString *)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_32BGRA)};
+    [o setAlwaysDiscardsLateVideoFrames:YES];
+    [session_ addInput:i];
+    [session_ addOutput:o];
+    if (preview_ != nullptr) {
+        preview_.previewLayer = [[AVCaptureVideoPreviewLayer alloc] initWithSession:session_];
+        preview_.previewLayer.videoGravity = AVLayerVideoGravityResizeAspect;
+    }
+    [session_ startRunning];
 }
 
 -(void) updateConfiguration:(id _Nullable)arguments result:(FlutterResult)result {

@@ -55,5 +55,14 @@ class Device {
         }
     }
 
+    int get hashCode {
+        return _isFront as int;
+    }
+
+    bool operator ==(dynamic o) {
+      Device oo = o; 
+        return oo == null ? false : _isFront == o._isFront;
+    }
+
     final bool _isFront;
 }
