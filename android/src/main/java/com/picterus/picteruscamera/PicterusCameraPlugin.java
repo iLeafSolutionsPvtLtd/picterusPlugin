@@ -5,7 +5,6 @@ import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.params.StreamConfigurationMap;
@@ -17,12 +16,6 @@ import java.util.Map;
 
 import io.fotoapparat.Fotoapparat;
 import io.fotoapparat.FotoapparatBuilder;
-import io.fotoapparat.parameter.Flash;
-import io.fotoapparat.parameter.FocusMode;
-import io.fotoapparat.parameter.Resolution;
-import io.fotoapparat.result.BitmapPhoto;
-import io.fotoapparat.selector.FlashSelectorsKt;
-import io.fotoapparat.selector.FocusModeSelectorsKt;
 import io.fotoapparat.selector.LensPositionSelectorsKt;
 
 import io.flutter.plugin.common.MethodCall;
@@ -30,6 +23,7 @@ import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+import io.fotoapparat.view.CameraView;
 
 /** PicterusCameraPlugin */
 public class PicterusCameraPlugin implements MethodCallHandler {
@@ -50,12 +44,24 @@ public class PicterusCameraPlugin implements MethodCallHandler {
         Size size;
     }
 
+    final static PicterusCameraPlugin sharedInstance = new PicterusCameraPlugin();
+
     /** Plugin registration. */
     public static void registerWith(Registrar registrar) {
         final MethodChannel channel = new MethodChannel(registrar.messenger(), "camera.picterus.com");
-        channel.setMethodCallHandler(new PicterusCameraPlugin());
+        channel.setMethodCallHandler(sharedInstance);
         context_ = registrar.activeContext().getApplicationContext();
         registrar.platformViewRegistry().registerViewFactory("CameraView", new PicterusCameraViewFactory());
+    }
+
+    public void registerPreviewView(PicterusCameraView view) {
+        preview_ = view;
+        if (builder_ != null) {
+            builder_.into((CameraView)preview_.getView());
+            fotoapparat_ = builder_.build();
+            fotoapparat_.start();
+            builder_ = null;
+        }
     }
 
     @Override
@@ -147,6 +153,14 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                 result.error(e.getLocalizedMessage(), null, null);
             }
         } else if (call.method.equals("initialize")) {
+            builder_ = new FotoapparatBuilder(context_).
+                    lensPosition(LensPositionSelectorsKt.back());
+            if (preview_ != null) {
+                builder_.into((CameraView)preview_.getView());
+                fotoapparat_ = builder_.build();
+                fotoapparat_.start();
+                builder_ = null;
+            }
         } else if (call.method.equals("updateConfiguration")) {
         } else if (call.method.equals("capture")) {
         } else {
@@ -178,4 +192,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
     }
 
     private static Context context_;
+    private Fotoapparat fotoapparat_;
+    private FotoapparatBuilder builder_;
+    private PicterusCameraView preview_;
 }

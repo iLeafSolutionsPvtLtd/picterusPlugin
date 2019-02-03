@@ -13,6 +13,8 @@ public class PicterusCameraViewFactory extends PlatformViewFactory {
 
     @Override
     public PlatformView create(Context context, int i, Object o) {
-        return new PicterusCameraView(context, i);
+        PicterusCameraView r = new PicterusCameraView(context, i);
+        PicterusCameraPlugin.sharedInstance.registerPreviewView(r);
+        return r;
     }
 }
