@@ -1,4 +1,5 @@
 #import "PicterusCameraPlugin.h"
+#import "PicterusCameraView.h"
 
 #import <AVFoundation/AVFoundation.h>
 
@@ -12,6 +13,8 @@
               binaryMessenger:[registrar messenger]];
     PicterusCameraPlugin* instance = [[PicterusCameraPlugin alloc] init];
     [registrar addMethodCallDelegate:instance channel:channel];
+    auto f = [[PicterusCameraViewFactory alloc] init];
+    [registrar registerViewFactory:f withId:@"CameraView"];
 }
 
 namespace {
@@ -37,6 +40,8 @@ namespace {
         [self sizes:[call arguments] result:result];
     } else if ([@"flashlightModes" isEqualToString:call.method]) {
         [self flashlightModes:[call arguments] result:result];
+    } else if ([@"focusModes" isEqualToString:call.method]) {
+        [self focusModes:[call arguments] result:result];
     } else if ([@"initialize" isEqualToString:call.method]) {
         [self initialize:[call arguments] result:result];
     } else if ([@"updateConfiguration" isEqualToString:call.method]) {
@@ -87,7 +92,7 @@ namespace {
 -(void) flashlightModes:(NSString*)arguments result:(FlutterResult)result {
     AVCaptureDevice* device = deviceFromString(arguments);
     NSMutableArray<NSString*> *reply =
-    [[NSMutableArray alloc] initWithCapacity:2];
+    [[NSMutableArray alloc] initWithCapacity:3];
     if (device == nullptr) {
         result(reply);
     }
@@ -99,6 +104,23 @@ namespace {
     }
     if ([device isFlashModeSupported:AVCaptureFlashModeAuto]) {
         [reply addObject:@"auto"];
+    }
+    result(reply);
+}
+
+-(void) focusModes:(NSString*)arguments result:(FlutterResult)result {
+    AVCaptureDevice* device = deviceFromString(arguments);
+    NSMutableArray<NSString*> *reply =
+    [[NSMutableArray alloc] initWithCapacity:3];
+    if (device == nullptr) {
+        result(reply);
+    }
+    [reply addObject:@"off"];
+    if ([device isFocusModeSupported:AVCaptureFocusModeAutoFocus]) {
+        [reply addObject:@"auto"];
+    }
+    if ([device isFocusModeSupported:AVCaptureFocusModeContinuousAutoFocus]) {
+        [reply addObject:@"manual"];
     }
     result(reply);
 }

@@ -33,6 +33,17 @@ class Device {
         }
     }
 
+    Future<List<FocusMode>> get focusModes async {
+        try {
+            final List<dynamic> fs = await NativeBridge.instance.invokeMethod('focusModes', this.toNative);
+            return fs.map((dynamic mode) {
+                return FocusMode.fromNative(mode);
+            }).toList();
+        } on PlatformException catch (e) {
+            throw CameraException(e.code, e.message);
+        }
+    }
+
     static Future<List<Device>> get devices async {
         try {
             final List<dynamic> ds = await NativeBridge.instance.invokeMethod('devices');

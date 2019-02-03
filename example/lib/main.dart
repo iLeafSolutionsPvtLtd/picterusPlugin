@@ -26,6 +26,8 @@ class _MyAppState extends State<MyApp> {
         try {
             final devices = await Device.devices;
             for (final device in devices) {
+                text += '\n';
+                text += '\n';
                 text += device.toNative;
                 text += '\n';
                 final sizes = await device.sizes;
@@ -35,8 +37,15 @@ class _MyAppState extends State<MyApp> {
                     text += size.height.toString();
                     text += '\n';
                 }
+                text += '\n';
                 final modes = await device.flashlightModes;
                 for (final mode in modes) {
+                    text += mode.toNative;
+                    text += '\n';
+                }
+                text += '\n';
+                final focusModes = await device.focusModes;
+                for (final mode in focusModes) {
                     text += mode.toNative;
                     text += '\n';
                 }
@@ -59,12 +68,19 @@ class _MyAppState extends State<MyApp> {
                         appBar: AppBar(
                                 title: const Text('Camera sample'),
                         ),
-                        body: Center(
-                                child: Text(_text,
-                                        style: TextStyle(
-                                                color: Colors.red.withOpacity(0.8),
-                                                fontWeight: FontWeight.bold),
-                                        textAlign: TextAlign.center),
+                        body: ListView(
+                                children: <Widget>[
+                                    SizedBox(
+                                        width: 375,
+                                        height: 500,
+                                        child: CameraView(),
+                                    ),
+                                    Text(_text,
+                                    style: TextStyle(
+                                            color: Colors.red.withOpacity(0.8),
+                                            fontWeight: FontWeight.bold),
+                                    textAlign: TextAlign.left)
+                                ],
                         ),
                 ),
         );

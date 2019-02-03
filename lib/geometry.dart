@@ -5,9 +5,7 @@ class Point {
     double y;
 
     Point(this.x, this.y);
-
     Point.zero() : this(0, 0);
-
     Point.fromNative(Map<dynamic, dynamic> data) : this(data['x'], data['y']);
 
     Map<String, double> get toNative {
@@ -20,9 +18,7 @@ class Size {
     double height;
 
     Size(this.width, this.height);
-
     Size.zero() : this(0, 0);
-
     Size.fromNative(Map<dynamic, dynamic> data) : this(data['width'], data['height']);
 
     Map<String, double> get toNative {
@@ -35,9 +31,7 @@ class Rect {
     Size size;
 
     Rect(this.origin, this.size);
-
     Rect.zero() : this(Point.zero(), Size.zero());
-
     Rect.fromNative(Map<dynamic, dynamic> data)
             : this(Point.fromNative(data['origin']), Size.fromNative(data['size']));
 

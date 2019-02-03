@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.fotoapparat.Fotoapparat;
+import io.fotoapparat.FotoapparatBuilder;
 import io.fotoapparat.parameter.Flash;
 import io.fotoapparat.parameter.FocusMode;
 import io.fotoapparat.parameter.Resolution;
@@ -32,11 +33,29 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 /** PicterusCameraPlugin */
 public class PicterusCameraPlugin implements MethodCallHandler {
+    public static enum Device {
+        front,
+        back
+    }
+
+    public static enum FocusMode {
+        off,
+        auto,
+        manual
+    }
+
+    public class PreviewConfiguration {
+        Device device;
+        FocusMode focusMode;
+        Size size;
+    }
+
     /** Plugin registration. */
     public static void registerWith(Registrar registrar) {
         final MethodChannel channel = new MethodChannel(registrar.messenger(), "camera.picterus.com");
         channel.setMethodCallHandler(new PicterusCameraPlugin());
         context_ = registrar.activeContext().getApplicationContext();
+        registrar.platformViewRegistry().registerViewFactory("CameraView", new PicterusCameraViewFactory());
     }
 
     @Override
@@ -95,6 +114,33 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                     r.add("auto");
                 } else {
                     r.add("off");
+                }
+                result.success(r);
+            } catch (CameraAccessException e) {
+                result.error(e.getLocalizedMessage(), null, null);
+            }
+        } else if (call.method.equals("focusModes")) {
+            String s = call.arguments();
+            String id = deviceFromString(s);
+            CameraManager m = (CameraManager)context_.getSystemService(Context.CAMERA_SERVICE);
+            try {
+                ArrayList<String> r = new ArrayList<>();
+                CameraCharacteristics cs = m.getCameraCharacteristics(id);
+                int[] modes = cs.get(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES);
+                for (int mode : modes) {
+                    switch (mode) {
+                        case CameraCharacteristics.CONTROL_AF_MODE_OFF:
+                            r.add("off");
+                            break;
+                        case CameraCharacteristics.CONTROL_AF_MODE_AUTO:
+                            r.add("auto");
+                            break;
+                        case CameraCharacteristics.CONTROL_AF_MODE_CONTINUOUS_PICTURE:
+                            r.add("manual");
+                            break;
+                        default:
+                            break;
+                    }
                 }
                 result.success(r);
             } catch (CameraAccessException e) {

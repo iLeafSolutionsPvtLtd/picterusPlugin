@@ -3,40 +3,50 @@ part of 'camera.dart';
 class PreviewConfiguration {
     Device device;
     Size size;
-    bool autofocus;
+    FocusMode focusMode;
 
-    PreviewConfiguration(this.device, this.size, this.autofocus);
+    PreviewConfiguration(this.device, this.size, this.focusMode);
 
-    PreviewConfiguration.device(Device device) : this(device, Size.zero(), true);
+    PreviewConfiguration.device(Device device) : this(device, Size.zero(), FocusMode.auto());
 
     PreviewConfiguration.fromNative(Map<String, dynamic> m)
-            : this(Device.fromNative(m['device']), Size.fromNative(m['size']), m['autofocus']);
+            : this(Device.fromNative(m['device']), Size.fromNative(m['size']), m['focusMode']);
 
     Map<String, dynamic> get toNative {
         return <String, dynamic>{
             'device' : device.toNative,
             'size' : size.toNative,
-            'autofocus' : autofocus
+            'focusMode' : focusMode
         };
     }
 
     PreviewConfiguration copyWith({
         Device device,
         Size size,
-        bool autofocus
+        FocusMode focusMode
     }) {
-        return PreviewConfiguration(device, size ?? this.size, autofocus ?? this.autofocus);
+        return PreviewConfiguration(device, size ?? this.size, focusMode ?? this.focusMode);
     }
 }
 
 class FlashlightMode {
     FlashlightMode.on() : _value = 'on';
-
     FlashlightMode.off() : _value = 'off';
-
     FlashlightMode.auto() : _value = 'auto';
-
     FlashlightMode.fromNative(String s) : _value = s;
+
+    String get toNative {
+        return _value;
+    }
+
+    final String _value;
+}
+
+class FocusMode {
+    FocusMode.off() : _value = 'off';
+    FocusMode.auto() : _value = 'auto';
+    FocusMode.manual() : _value = 'manual';
+    FocusMode.fromNative(String s) : _value = s;
 
     String get toNative {
         return _value;
