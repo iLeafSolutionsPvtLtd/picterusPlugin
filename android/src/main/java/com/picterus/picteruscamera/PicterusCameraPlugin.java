@@ -153,8 +153,11 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                 result.error(e.getLocalizedMessage(), null, null);
             }
         } else if (call.method.equals("initialize")) {
+            Map<String, Object> m = (Map)call.arguments;
+            String d = (String)m.get("device");
             builder_ = new FotoapparatBuilder(context_).
-                    lensPosition(LensPositionSelectorsKt.back());
+                    lensPosition(d.equals("back") ? LensPositionSelectorsKt.back()
+                            : LensPositionSelectorsKt.front());
             if (preview_ != null) {
                 builder_.into((CameraView)preview_.getView());
                 fotoapparat_ = builder_.build();

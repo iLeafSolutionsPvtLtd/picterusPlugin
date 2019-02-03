@@ -146,10 +146,11 @@ namespace {
     result(reply);
 }
 
--(void) initialize:(id _Nullable)arguments result:(FlutterResult)result {
+-(void) initialize:(NSDictionary*)arguments result:(FlutterResult)result {
     session_ = [[AVCaptureSession alloc] init];
     session_.sessionPreset = AVCaptureSessionPresetHigh;
-    auto d = [AVCaptureDevice devices][0];
+    NSString* dev = [arguments objectForKey:@"device"];
+    auto d = deviceFromString(dev);
     auto i = [[AVCaptureDeviceInput alloc] initWithDevice:d error:nil];
     auto o = [AVCaptureVideoDataOutput new];
     o.videoSettings =
