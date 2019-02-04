@@ -26,7 +26,7 @@ class _MyAppState extends State<MyApp> {
         String text = '';
         try {
             final devices = await Device.devices;
-            final d = Device.back();
+            final d = Device.front();
             if (devices.contains(d)) {
                 final s = (await d.sizes)[0];
                 _camera = Camera(PreviewConfiguration(d, s, FocusMode.auto()));
@@ -66,6 +66,13 @@ class _MyAppState extends State<MyApp> {
         });
     }
 
+    void buttonClicked() {
+        final d = _camera.currentConfiguration;
+        _camera.updateConfiguration(_camera.currentConfiguration.copyWith(device: d.device == Device.front() 
+                                                                                  ? Device.back()
+                                                                                  : Device.front()));
+    }
+
     @override
     Widget build(BuildContext context) {
         return MaterialApp(
@@ -79,6 +86,12 @@ class _MyAppState extends State<MyApp> {
                                         width: 375,
                                         height: 500,
                                         child: _camera == null ? Center(child: Text('Initializing')) : _camera.cameraView
+                                    ),
+                                    FlatButton(
+                                        child: Text('Switch'),
+                                        color: Color(0x8F8F8FFF),
+                                        highlightColor: Color(0x4F4F4FFF),
+                                        onPressed: buttonClicked
                                     ),
                                     Text(_text,
                                     style: TextStyle(

@@ -21,7 +21,7 @@ class Camera {
 
     Future<void> initialize() async {
         try {
-            await NativeBridge.instance.invokeMethod('initialize', _config.toNative);
+            NativeBridge.instance.invokeMethod('initialize', _config.toNative);
         } on PlatformException catch (e) {
             throw CameraException(e.code, e.message);
         }
@@ -32,13 +32,12 @@ class Camera {
     }
 
     Future<void> updateConfiguration(PreviewConfiguration config) async {
-        /// TODO
         try {
-            await NativeBridge.instance.invokeMethod('updateConfiguration', _config.toNative);
+            NativeBridge.instance.invokeMethod('updateConfiguration', config.toNative);
+            _config = config;
         } on PlatformException catch (e) {
             throw CameraException(e.code, e.message);
         }
-        _config = config;
     }
 
     Future<void> capture(CaptureConfiguration config) async {

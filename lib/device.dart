@@ -60,7 +60,7 @@ class Device {
     }
 
     bool operator ==(dynamic o) {
-      Device oo = o; 
+        Device oo = o; 
         return oo == null ? false : _isFront == o._isFront;
     }
 

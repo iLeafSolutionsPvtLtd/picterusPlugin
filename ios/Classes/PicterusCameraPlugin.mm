@@ -165,8 +165,20 @@ namespace {
     [session_ startRunning];
 }
 
--(void) updateConfiguration:(id _Nullable)arguments result:(FlutterResult)result {
-
+-(void) updateConfiguration:(NSDictionary*)arguments result:(FlutterResult)result {
+    NSString* dev = [arguments objectForKey:@"device"];
+    auto d = deviceFromString(dev);
+    [session_ beginConfiguration];
+    auto inputs = [session_ inputs];
+    auto i = [[AVCaptureDeviceInput alloc] initWithDevice:d error:nil];
+    for (auto i = 0; i < [inputs count]; ++i) {
+        [session_ removeInput:inputs[i]];
+    }
+    [session_ addInput:i];
+    for (auto i = 1; i < [inputs count]; ++i) {
+        [session_ addInput:inputs[i]];
+    }
+    [session_ commitConfiguration];
 }
 
 -(void) capture:(id _Nullable)arguments result:(FlutterResult)result {
