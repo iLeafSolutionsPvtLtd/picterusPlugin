@@ -1,7 +1,6 @@
 package com.picterus.picteruscamera;
 
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -16,6 +15,7 @@ import java.util.Map;
 
 import io.fotoapparat.Fotoapparat;
 import io.fotoapparat.FotoapparatBuilder;
+import io.fotoapparat.configuration.CameraConfiguration;
 import io.fotoapparat.selector.LensPositionSelectorsKt;
 
 import io.flutter.plugin.common.MethodCall;
@@ -25,7 +25,6 @@ import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 import io.fotoapparat.view.CameraView;
 
-/** PicterusCameraPlugin */
 public class PicterusCameraPlugin implements MethodCallHandler {
     public static enum Device {
         front,
@@ -168,7 +167,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             Map<String, Object> m = (Map)call.arguments;
             String d = (String)m.get("device");
             fotoapparat_.switchTo(d.equals("back") ? LensPositionSelectorsKt.back()
-                    : LensPositionSelectorsKt.front(), null);
+                    : LensPositionSelectorsKt.front(), new CameraConfiguration());
         } else if (call.method.equals("capture")) {
         } else {
             result.notImplemented();
