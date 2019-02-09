@@ -26,7 +26,7 @@ class _MyAppState extends State<MyApp> {
         String text = '';
         try {
             final devices = await Device.devices;
-            final d = Device.front();
+            final d = Device.back();
             if (devices.contains(d)) {
                 final s = (await d.sizes)[0];
                 _camera = Camera(PreviewConfiguration(d, s, FocusMode.auto()));

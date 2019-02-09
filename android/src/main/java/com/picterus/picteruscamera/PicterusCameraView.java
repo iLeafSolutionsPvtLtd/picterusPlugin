@@ -1,15 +1,15 @@
 package com.picterus.picteruscamera;
 
 import android.content.Context;
+import android.view.TextureView;
 import android.view.View;
 
 import io.flutter.plugin.platform.PlatformView;
-import io.fotoapparat.view.CameraView;
 
 public class PicterusCameraView implements PlatformView {
     PicterusCameraView(Context context, int id) {
-        mCameraView = new CameraView(context);
-   }
+        mCameraView = new TextureView(context);
+    }
 
     @Override
     public View getView() {
@@ -21,5 +21,5 @@ public class PicterusCameraView implements PlatformView {
 
     }
 
-    private CameraView mCameraView;
+    private TextureView mCameraView;
 }
