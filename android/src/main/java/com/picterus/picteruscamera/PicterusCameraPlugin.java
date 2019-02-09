@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -86,7 +87,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                         }
                         if (activity == PicterusCameraPlugin.this.activity_) {
                             orientationEventListener_.enable();
-                            if (cameraDevice != null) {
+                            if (!cameraName.isEmpty()) {
                                 openCamera(null);
                             }
                         }
@@ -96,7 +97,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                     public void onActivityPaused(Activity activity) {
                         if (activity == PicterusCameraPlugin.this.activity_) {
                             orientationEventListener_.disable();
-                            if (cameraDevice != null) {
+                            if (!cameraName.isEmpty()) {
                                 closeCamera();
                             }
                         }
@@ -105,7 +106,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                     @Override
                     public void onActivityStopped(Activity activity) {
                         if (activity == PicterusCameraPlugin.this.activity_) {
-                            if (cameraDevice != null) {
+                            if (!cameraName.isEmpty()) {
                                 closeCamera();
                             }
                         }
@@ -437,7 +438,9 @@ public class PicterusCameraPlugin implements MethodCallHandler {
     private void startPreview() throws CameraAccessException {
         closeCaptureSession();
 
-        SurfaceTexture surfaceTexture = ((TextureView)preview_.getView()).getSurfaceTexture();
+        final PicterusCameraView.PicterusTextureView view =
+                (PicterusCameraView.PicterusTextureView)preview_.getView();
+        SurfaceTexture surfaceTexture = view.getSurfaceTexture();
         surfaceTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
         captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
 
@@ -459,6 +462,12 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                             return;
                         }
                         try {
+                            int orientation = activity_.getResources().getConfiguration().orientation;
+                            if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                                view.setAspectRatio(previewSize.getWidth(), previewSize.getHeight());
+                            } else {
+                                view.setAspectRatio(previewSize.getHeight(), previewSize.getWidth());
+                            }
                             cameraCaptureSession = session;
                             captureRequestBuilder.set(
                                     CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
