@@ -2,6 +2,7 @@
 #import "PicterusCameraView.h"
 
 #import <AVFoundation/AVFoundation.h>
+#import <CoreImage/CoreImage.h>
 
 #include <set>
 #include <utility>
@@ -223,10 +224,20 @@ namespace {
     [photoOutput_ capturePhotoWithSettings:photoSettings delegate:self];
 }
 
--(void) captureOutput:(AVCapturePhotoOutput *)output didFinishProcessingPhoto:(AVCapturePhoto *)photo error:(NSError *)error {
-    auto i = [[UIImage alloc] initWithData:[photo fileDataRepresentation]];
+-(void) captureOutput:(AVCapturePhotoOutput *)output didFinishProcessingPhoto:(AVCapturePhoto *)photo error:(NSError *)error  API_AVAILABLE(ios(11.0)) {
+    CIImage* ci = [[CIImage alloc] initWithData:[photo fileDataRepresentation]];
+    ci = [ci imageByApplyingTransform:CGAffineTransformMakeRotation(-M_PI_2)];
+    auto di = (AVCaptureDeviceInput*)[session_.inputs objectAtIndex:0];
+    if (di.device.position == AVCaptureDevicePositionFront) {
+        ci = [ci imageByApplyingTransform:CGAffineTransformMakeScale(-1.0, 1.0)];
+    }
+    auto cg = [[[CIContext alloc] init] createCGImage:ci fromRect:ci.extent];
+    auto i = [[UIImage alloc] initWithCGImage: cg];
     [UIImageJPEGRepresentation(i, 1.0) writeToFile:capturePath_ atomically:true];
     [channel_ invokeMethod:@"captureFinished" arguments:capturePath_];
 }
 
+-(void) captureOutput:(AVCapturePhotoOutput *)output didFinishProcessingPhotoSampleBuffer:(CMSampleBufferRef)photoSampleBuffer previewPhotoSampleBuffer:(CMSampleBufferRef)previewPhotoSampleBuffer resolvedSettings:(AVCaptureResolvedPhotoSettings *)resolvedSettings bracketSettings:(AVCaptureBracketedStillImageSettings *)bracketSettings error:(NSError *)error {
+    /// TODO For ios 10.
+}
 @end

@@ -72,7 +72,7 @@ class _MyAppState extends State<MyApp> {
         final size = (await _camera.configuration.device.sizes).last;
         _camera.capture(CaptureConfiguration(size, FlashlightMode.off(), path), (String path) {
             setState(() {
-              _imagePath = path;
+                _imagePath = path;
             });
         });
     }
@@ -81,7 +81,7 @@ class _MyAppState extends State<MyApp> {
         _zoomFactor = value * value;
         _camera.changeZoomFactor(_zoomFactor);
         setState(() {
-          _zoomFactor = value * value;
+            _zoomFactor = value * value;
         });
     }
 
@@ -102,24 +102,20 @@ class _MyAppState extends State<MyApp> {
                                         highlightColor: Color(0xFF4F4FFF),
                                         onPressed: switchButtonClicked
                                     ),
-                                    Text('Zoom'),
-                                    Slider(onChanged: zoomChanged, min: 1.0, max: sqrt(_maxZoomFactor), value: sqrt(_zoomFactor)),
                                     FlatButton(
                                         child: Text('Capture'),
                                         color: Color(0xFF0000FF),
                                         highlightColor: Color(0xFF00FFFF),
                                         onPressed: captureButtonClicked
                                     ),
+                                    Text('Zoom'),
+                                    Slider(onChanged: zoomChanged, min: 1.0, max: sqrt(_maxZoomFactor), value: sqrt(_zoomFactor)),
+                                    _imagePath == '' ? Center(child: Text('No image to show')) : Image.file(File(_imagePath)),
                                     Text(_text,
                                     style: TextStyle(
                                             color: Colors.cyan,
                                             fontWeight: FontWeight.bold),
                                     textAlign: TextAlign.center),
-                                    SizedBox(
-                                        width: 375,
-                                        height: 500,
-                                        child: _imagePath == '' ? Center(child: Text('No image to show')) : Image.file(File(_imagePath)) 
-                                    ),
                                 ],
                         ),
                 ),
