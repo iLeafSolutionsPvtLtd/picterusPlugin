@@ -279,18 +279,15 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                 captureRequestBuilder.set(
                         CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
                 CameraCharacteristics characteristics = cameraManager_.getCameraCharacteristics(cameraName);
-                float maxzoom = (characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM))*10;
                 Rect m = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
 
-                int minW = (int) (m.width() / maxzoom);
-                int minH = (int) (m.height() / maxzoom);
-                int difW = m.width() - minW;
-                int difH = m.height() - minH;
-                int cropW = difW / 100 * (int)(z * 10.0);
-                int cropH = difH / 100 * (int)(z * 10.0);
-                cropW -= cropW & 3;
-                cropH -= cropH & 3;
-                Rect zoom = new Rect(cropW, cropH, m.width() - cropW, m.height() - cropH);
+                int w = (int)(m.width() / z);
+                int h = (int)(m.height() / z);
+                w -= w & 3;
+                h -= h & 3;
+                Point c = new Point(m.centerX(), m.centerY());
+
+                Rect zoom = new Rect(c.x - w / 2, c.y - h / 2, c.x + w / 2, c.y + h / 2);
                 captureRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoom);
                 cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
             } catch (CameraAccessException e) {
