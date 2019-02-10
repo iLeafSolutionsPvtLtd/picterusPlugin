@@ -63,12 +63,16 @@ namespace {
         [self flashlightModes:[call arguments] result:result];
     } else if ([@"focusModes" isEqualToString:call.method]) {
         [self focusModes:[call arguments] result:result];
+    } else if ([@"maxZoomFactor" isEqualToString:call.method]) {
+        [self maxZoomFactor:[call arguments] result:result];
     } else if ([@"initialize" isEqualToString:call.method]) {
         [self initialize:[call arguments] result:result];
-    } else if ([@"updateConfiguration" isEqualToString:call.method]) {
-        [self updateConfiguration:[call arguments] result:result];
+    } else if ([@"switchDevice" isEqualToString:call.method]) {
+        [self switchDevice:[call arguments] result:result];
+    } else if ([@"changeZoomFactor" isEqualToString:call.method]) {
+        [self changeZoomFactor:[call arguments] result:result];
     } else if ([@"capture" isEqualToString:call.method]) {
-        [self updateConfiguration:[call arguments] result:result];
+        [self capture:[call arguments] result:result];
     } else {
         result(FlutterMethodNotImplemented);
     }
@@ -146,6 +150,12 @@ namespace {
     result(reply);
 }
 
+-(void) maxZoomFactor:(NSString*)arguments result:(FlutterResult)result {
+    AVCaptureDevice* device = deviceFromString(arguments);
+    double z = device.activeFormat.videoMaxZoomFactor;
+    result([NSNumber numberWithDouble: z]);
+}
+
 -(void) initialize:(NSDictionary*)arguments result:(FlutterResult)result {
     session_ = [[AVCaptureSession alloc] init];
     session_.sessionPreset = AVCaptureSessionPresetHigh;
@@ -165,11 +175,12 @@ namespace {
     [session_ startRunning];
 }
 
--(void) updateConfiguration:(NSDictionary*)arguments result:(FlutterResult)result {
-    NSString* dev = [arguments objectForKey:@"device"];
-    auto d = deviceFromString(dev);
+-(void) switchDevice:(NSDictionary*)arguments result:(FlutterResult)result {
     [session_ beginConfiguration];
     auto inputs = [session_ inputs];
+    auto di = (AVCaptureDeviceInput*)[session_.inputs objectAtIndex:0];
+    auto dn = di.device.position == AVCaptureDevicePositionBack ? @"front" : @"back";
+    auto d = deviceFromString(dn);
     auto i = [[AVCaptureDeviceInput alloc] initWithDevice:d error:nil];
     for (auto i = 0; i < [inputs count]; ++i) {
         [session_ removeInput:inputs[i]];
@@ -178,6 +189,15 @@ namespace {
     for (auto i = 1; i < [inputs count]; ++i) {
         [session_ addInput:inputs[i]];
     }
+    [session_ commitConfiguration];
+}
+
+-(void) changeZoomFactor:(NSNumber*)arguments result:(FlutterResult)result {
+    [session_ beginConfiguration];
+    auto d = [((AVCaptureDeviceInput*)[session_.inputs objectAtIndex:0]) device];
+    [d lockForConfiguration:nil];
+    [d rampToVideoZoomFactor:[arguments doubleValue] withRate:16.0];
+    [d unlockForConfiguration];
     [session_ commitConfiguration];
 }
 

@@ -4,28 +4,39 @@ class PreviewConfiguration {
     Device device;
     Size size;
     FocusMode focusMode;
+    double zoomFactor;
 
-    PreviewConfiguration(this.device, this.size, this.focusMode);
+    PreviewConfiguration(this.device, this.size, this.focusMode, this.zoomFactor);
 
-    PreviewConfiguration.device(Device device) : this(device, Size.zero(), FocusMode.auto());
+    PreviewConfiguration.device(Device device) : this(device, Size.zero(), FocusMode.auto(), 1.0);
 
     PreviewConfiguration.fromNative(Map<String, dynamic> m)
-            : this(Device.fromNative(m['device']), Size.fromNative(m['size']), FocusMode.fromNative(m['focusMode']));
+            : this(Device.fromNative(m['device'])
+            , Size.fromNative(m['size'])
+            , FocusMode.fromNative(m['focusMode'])
+            , m['zoomFactor']);
 
     Map<String, dynamic> get toNative {
         return <String, dynamic>{
             'device' : device.toNative,
             'size' : size.toNative,
-            'focusMode' : focusMode.toNative
+            'focusMode' : focusMode.toNative,
+            'zoomFactor' : zoomFactor
         };
     }
 
     PreviewConfiguration copyWith({
         Device device,
         Size size,
-        FocusMode focusMode
+        FocusMode focusMode,
+        double zoomFactor
     }) {
-        return PreviewConfiguration(device, size ?? this.size, focusMode ?? this.focusMode);
+        return PreviewConfiguration(
+            device ?? this.device,
+            size ?? this.size,
+            focusMode ?? this.focusMode,
+            zoomFactor ?? this.zoomFactor
+        );
     }
 }
 

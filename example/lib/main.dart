@@ -26,17 +26,16 @@ class _MyAppState extends State<MyApp> {
         String text = '';
         try {
             final devices = await Device.devices;
-            final d = Device.back();
+            final d = Device.front();
             if (devices.contains(d)) {
                 final s = (await d.sizes)[0];
-                _camera = Camera(PreviewConfiguration(d, s, FocusMode.auto()));
-                _camera.initialize();
+                _camera = Camera();
+                _camera.initialize(PreviewConfiguration(d, s, FocusMode.auto(), 1.0));
             }
             text += '\n';
-            final device = _camera.currentConfiguration.device;
-            text += device.toNative;
+            text += d.toNative;
             text += '\n';
-            final sizes = await device.sizes;
+            final sizes = await d.sizes;
             for (final size in sizes) {
                 text += size.width.toString();
                 text += ' ';
@@ -44,33 +43,37 @@ class _MyAppState extends State<MyApp> {
                 text += '\n';
             }
             text += '\n';
-            final modes = await device.flashlightModes;
+            final modes = await d.flashlightModes;
             for (final mode in modes) {
                 text += mode.toNative;
                 text += '\n';
             }
             text += '\n';
-            final focusModes = await device.focusModes;
+            final focusModes = await d.focusModes;
             for (final mode in focusModes) {
                 text += mode.toNative;
                 text += '\n';
             }
+            text += (await d.maxZoomFactor).toString();
         } on PlatformException {
             text = 'Failed to get platform version.';
         }
 
-        if (!mounted) return;
+        if (!mounted) {
+            return;
+        }
 
         setState(() {
             _text = text;
         });
     }
 
-    void buttonClicked() {
-        final d = _camera.currentConfiguration;
-        _camera.updateConfiguration(_camera.currentConfiguration.copyWith(device: d.device == Device.front() 
-                                                                                  ? Device.back()
-                                                                                  : Device.front()));
+    void switchButtonClicked() {
+        _camera.switchDevice();
+    }
+
+    void zoomButtonClicked() {
+        _camera.changeZoomFactor(2.0);
     }
 
     @override
@@ -91,7 +94,13 @@ class _MyAppState extends State<MyApp> {
                                         child: Text('Switch'),
                                         color: Color(0x8F8F8FFF),
                                         highlightColor: Color(0x4F4F4FFF),
-                                        onPressed: buttonClicked
+                                        onPressed: switchButtonClicked
+                                    ),
+                                    FlatButton(
+                                        child: Text('Zoom'),
+                                        color: Color(0x8F8F8FFF),
+                                        highlightColor: Color(0x4F4F4FFF),
+                                        onPressed: zoomButtonClicked
                                     ),
                                     Text(_text,
                                     style: TextStyle(

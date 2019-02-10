@@ -8,7 +8,10 @@ import android.app.Application;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Camera;
 import android.graphics.ImageFormat;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -247,6 +250,16 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             } catch (CameraAccessException e) {
                 result.error(e.getLocalizedMessage(), null, null);
             }
+        } else if (call.method.equals("maxZoomFactor")) {
+            String s = call.arguments();
+            String id = deviceFromString(s);
+            try {
+                CameraCharacteristics cs = cameraManager_.getCameraCharacteristics(id);
+                double modes = cs.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
+                result.success(modes);
+            } catch (CameraAccessException e) {
+                result.error(e.getLocalizedMessage(), null, null);
+            }
         } else if (call.method.equals("initialize")) {
             Map<String, Object> m = (Map)call.arguments;
             if (cameraDevice != null) {
@@ -255,9 +268,33 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             initializeCamera(m, result);
             this.activity_.getApplication().registerActivityLifecycleCallbacks(this.activityLifecycleCallbacks_);
             orientationEventListener_.enable();
-        } else if (call.method.equals("updateConfiguration")) {
-            Map<String, Object> m = (Map)call.arguments;
+        } else if (call.method.equals("switchDevice")) {
+            final Map<String, Object> m = configuration;
+            String d = (String)m.get("device");
+            m.put("device", d == "back" ? "front" : "back");
             initializeCamera(m, result);
+        } else if (call.method.equals("changeZoomFactor")) {
+            double z = (double)call.arguments;
+            try {
+                captureRequestBuilder.set(
+                        CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                CameraCharacteristics characteristics = cameraManager_.getCameraCharacteristics(cameraName);
+                float maxzoom = (characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM))*10;
+                Rect m = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+
+                int minW = (int) (m.width() / maxzoom);
+                int minH = (int) (m.height() / maxzoom);
+                int difW = m.width() - minW;
+                int difH = m.height() - minH;
+                int cropW = difW / 100 * (int)(z * 10.0);
+                int cropH = difH / 100 * (int)(z * 10.0);
+                cropW -= cropW & 3;
+                cropH -= cropH & 3;
+                Rect zoom = new Rect(cropW, cropH, m.width() - cropW, m.height() - cropH);
+                captureRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoom);
+                cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
+            } catch (CameraAccessException e) {
+            }
         } else if (call.method.equals("capture")) {
         } else {
             result.notImplemented();
@@ -296,6 +333,8 @@ public class PicterusCameraPlugin implements MethodCallHandler {
         double h = (double)s.get("height");
         previewSize = new Size((int)w, (int)h);
         String focus = (String)arguments.get("focus");
+        double zoom = (double)arguments.get("zoomFactor");
+        configuration = arguments;
 
         try {
             CameraCharacteristics characteristics = cameraManager_.getCameraCharacteristics(cameraName);
@@ -469,8 +508,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                                 view.setAspectRatio(previewSize.getHeight(), previewSize.getWidth());
                             }
                             cameraCaptureSession = session;
-                            captureRequestBuilder.set(
-                                    CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                            captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
                             cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
                         } catch (CameraAccessException e) {
                         }
@@ -521,4 +559,5 @@ public class PicterusCameraPlugin implements MethodCallHandler {
     private int sensorOrientation;
     private String cameraName;
     private Size previewSize;
+    private Map<String, Object> configuration;
 }

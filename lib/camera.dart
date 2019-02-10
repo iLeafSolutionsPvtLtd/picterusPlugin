@@ -15,33 +15,35 @@ part 'geometry.dart';
 part 'image.dart';
 
 class Camera {
-    Camera(PreviewConfiguration config) : _config = config {
+    Camera() {
         cameraView = CameraView(this);
     }
 
-    Future<void> initialize() async {
+    Future<void> initialize(PreviewConfiguration config) async {
         try {
-            NativeBridge.instance.invokeMethod('initialize', _config.toNative);
+            NativeBridge.instance.invokeMethod('initialize', config.toNative);
         } on PlatformException catch (e) {
             throw CameraException(e.code, e.message);
         }
     }
 
-    PreviewConfiguration get currentConfiguration {
-        return _config;
+    Future<void> switchDevice() async {
+        try {
+            NativeBridge.instance.invokeMethod('switchDevice');
+        } on PlatformException catch (e) {
+            throw CameraException(e.code, e.message);
+        }
     }
 
-    Future<void> updateConfiguration(PreviewConfiguration config) async {
+    Future<void> changeZoomFactor(double zoom) async {
         try {
-            NativeBridge.instance.invokeMethod('updateConfiguration', config.toNative);
-            _config = config;
+            NativeBridge.instance.invokeMethod('changeZoomFactor', zoom);
         } on PlatformException catch (e) {
             throw CameraException(e.code, e.message);
         }
     }
 
     Future<void> capture(CaptureConfiguration config) async {
-        /// TODO
         try {
             await NativeBridge.instance.invokeMethod('capture', config.toNative);
         } on PlatformException catch (e) {
@@ -49,6 +51,5 @@ class Camera {
         }
     }
 
-    PreviewConfiguration _config;
     CameraView cameraView;
 }
