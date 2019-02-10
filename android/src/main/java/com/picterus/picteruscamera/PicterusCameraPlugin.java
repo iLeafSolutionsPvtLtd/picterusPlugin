@@ -208,11 +208,9 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                 result.error(e.getLocalizedMessage(), null, null);
             }
         } else if (call.method.equals("flashlightModes")) {
-            String s = call.arguments();
-            String id = deviceFromString(s);
             try {
                 ArrayList<String> r = new ArrayList<>();
-                CameraCharacteristics cs = cameraManager_.getCameraCharacteristics(id);
+                CameraCharacteristics cs = cameraManager_.getCameraCharacteristics(cameraName);
                 if (cs.get(CameraCharacteristics.FLASH_INFO_AVAILABLE)) {
                     r.add("off");
                     r.add("on");

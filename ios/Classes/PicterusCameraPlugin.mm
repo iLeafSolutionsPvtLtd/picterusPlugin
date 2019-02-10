@@ -8,20 +8,23 @@
 
 static PicterusCameraPlugin* sharedInstance_ = nullptr;
 
-@interface PicterusCameraPlugin() {
+@interface PicterusCameraPlugin() <AVCapturePhotoCaptureDelegate> {
 @private PicterusCameraView* preview_;
 @private AVCaptureSession* session_;
+@private AVCapturePhotoOutput* photoOutput_;
+@private FlutterMethodChannel* channel_;
+@private NSString* capturePath_;
 }
 
 @end
 
 @implementation PicterusCameraPlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-    FlutterMethodChannel* channel = [FlutterMethodChannel
-        methodChannelWithName:@"camera.picterus.com"
-              binaryMessenger:[registrar messenger]];
     sharedInstance_ = [[PicterusCameraPlugin alloc] init];
-    [registrar addMethodCallDelegate:sharedInstance_ channel:channel];
+    sharedInstance_->channel_ = [FlutterMethodChannel
+                methodChannelWithName:@"camera.picterus.com"
+                binaryMessenger:[registrar messenger]];
+    [registrar addMethodCallDelegate:sharedInstance_ channel:sharedInstance_->channel_];
     auto f = [[PicterusCameraViewFactory alloc] init];
     [registrar registerViewFactory:f withId:@"CameraView"];
 }
@@ -115,20 +118,17 @@ namespace {
 }
 
 -(void) flashlightModes:(NSString*)arguments result:(FlutterResult)result {
-    AVCaptureDevice* device = deviceFromString(arguments);
     NSMutableArray<NSString*> *reply =
     [[NSMutableArray alloc] initWithCapacity:3];
-    if (device == nullptr) {
-        result(reply);
-    }
-    if ([device isFlashModeSupported:AVCaptureFlashModeOff]) {
-        [reply addObject:@"off"];
-    }
-    if ([device isFlashModeSupported:AVCaptureFlashModeOn]) {
-        [reply addObject:@"on"];
-    }
-    if ([device isFlashModeSupported:AVCaptureFlashModeAuto]) {
-        [reply addObject:@"auto"];
+    auto ms = [photoOutput_ supportedFlashModes];
+    for (auto i = 0; i < ms.count; ++i) {
+        if (ms[i].integerValue == AVCaptureFlashModeOff) {
+            [reply addObject:@"off"];
+        } else if (ms[i].integerValue == AVCaptureFlashModeOn) {
+            [reply addObject:@"on"];
+        } else if (ms[i].integerValue == AVCaptureFlashModeAuto) {
+            [reply addObject:@"auto"];
+        }
     }
     result(reply);
 }
@@ -168,6 +168,13 @@ namespace {
     [o setAlwaysDiscardsLateVideoFrames:YES];
     [session_ addInput:i];
     [session_ addOutput:o];
+    AVCapturePhotoOutput* photoOutput = [[AVCapturePhotoOutput alloc] init];
+    if ([session_ canAddOutput:photoOutput]) {
+        [session_ addOutput:photoOutput];
+        photoOutput_ = photoOutput;
+        photoOutput_.highResolutionCaptureEnabled = YES;
+    }
+
     if (preview_ != nullptr) {
         preview_.previewLayer = [[AVCaptureVideoPreviewLayer alloc] initWithSession:session_];
         preview_.previewLayer.videoGravity = AVLayerVideoGravityResizeAspect;
@@ -193,16 +200,33 @@ namespace {
 }
 
 -(void) changeZoomFactor:(NSNumber*)arguments result:(FlutterResult)result {
-    [session_ beginConfiguration];
     auto d = [((AVCaptureDeviceInput*)[session_.inputs objectAtIndex:0]) device];
     [d lockForConfiguration:nil];
-    [d rampToVideoZoomFactor:[arguments doubleValue] withRate:16.0];
+    d.videoZoomFactor = [arguments doubleValue];
     [d unlockForConfiguration];
-    [session_ commitConfiguration];
 }
 
--(void) capture:(id _Nullable)arguments result:(FlutterResult)result {
+-(void) capture:(NSDictionary*)arguments result:(FlutterResult)result {
+    AVCaptureConnection* photoOutputConnection = [photoOutput_ connectionWithMediaType:AVMediaTypeVideo];
+    photoOutputConnection.videoOrientation = AVCaptureVideoOrientationLandscapeRight;
+    AVCapturePhotoSettings* photoSettings = [AVCapturePhotoSettings photoSettings];
+    capturePath_ = (NSString*)[arguments objectForKey:@"path"];
+    NSString* fn = (NSString*)[arguments objectForKey:@"flashMode"];
+    if ([fn isEqualToString: @"auto"]) {
+        photoSettings.flashMode = AVCaptureFlashModeAuto;
+    } else if ([fn isEqualToString: @"on"]) {
+        photoSettings.flashMode = AVCaptureFlashModeOn;
+    } else {
+        photoSettings.flashMode = AVCaptureFlashModeOff;
+    }
+    photoSettings.highResolutionPhotoEnabled = YES;
+    [photoOutput_ capturePhotoWithSettings:photoSettings delegate:self];
+}
 
+-(void) captureOutput:(AVCapturePhotoOutput *)output didFinishProcessingPhoto:(AVCapturePhoto *)photo error:(NSError *)error {
+    auto i = [[UIImage alloc] initWithData:[photo fileDataRepresentation]];
+    [UIImageJPEGRepresentation(i, 1.0) writeToFile:capturePath_ atomically:true];
+    [channel_ invokeMethod:@"captureFinished" arguments:capturePath_];
 }
 
 @end
