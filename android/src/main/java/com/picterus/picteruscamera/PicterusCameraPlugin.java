@@ -8,7 +8,6 @@ import android.app.Application;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.Camera;
 import android.graphics.ImageFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -19,16 +18,22 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Size;
+import android.util.SparseIntArray;
 import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.TextureView;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -64,15 +69,6 @@ public class PicterusCameraPlugin implements MethodCallHandler {
         activity_ = registrar_.activity();
         context_ = registrar.activeContext().getApplicationContext();
         cameraManager_ = (CameraManager) activity_.getSystemService(Context.CAMERA_SERVICE);
-        orientationEventListener_ = new OrientationEventListener(context_) {
-            @Override
-            public void onOrientationChanged(int i) {
-                if (i == ORIENTATION_UNKNOWN) {
-                    return;
-                }
-                currentOrientation_ = (int) Math.round(i / 90.0) * 90;
-            }
-        };
         registrar.addRequestPermissionsResultListener(new CameraRequestPermissionsListener());
         this.activityLifecycleCallbacks_ =
                 new Application.ActivityLifecycleCallbacks() {
@@ -89,7 +85,6 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                             return;
                         }
                         if (activity == PicterusCameraPlugin.this.activity_) {
-                            orientationEventListener_.enable();
                             if (!cameraName.isEmpty()) {
                                 openCamera(null);
                             }
@@ -99,7 +94,6 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                     @Override
                     public void onActivityPaused(Activity activity) {
                         if (activity == PicterusCameraPlugin.this.activity_) {
-                            orientationEventListener_.disable();
                             if (!cameraName.isEmpty()) {
                                 closeCamera();
                             }
@@ -126,8 +120,8 @@ public class PicterusCameraPlugin implements MethodCallHandler {
     /** Plugin registration. */
     public static void registerWith(Registrar registrar) {
         sharedInstance = new PicterusCameraPlugin(registrar);
-        final MethodChannel channel = new MethodChannel(registrar.messenger(), "camera.picterus.com");
-        channel.setMethodCallHandler(sharedInstance);
+        sharedInstance.channel_ = new MethodChannel(registrar.messenger(), "camera.picterus.com");
+        sharedInstance.channel_.setMethodCallHandler(sharedInstance);
         registrar.platformViewRegistry().registerViewFactory("CameraView", new PicterusCameraViewFactory());
     }
 
@@ -167,7 +161,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
     }
 
     @Override
-    public void onMethodCall(MethodCall call, Result result) {
+    public void onMethodCall(MethodCall call, final Result result) {
         if (call.method.equals("devices")) {
             try {
                 ArrayList<String> r = new ArrayList<>();
@@ -265,7 +259,6 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             }
             initializeCamera(m, result);
             this.activity_.getApplication().registerActivityLifecycleCallbacks(this.activityLifecycleCallbacks_);
-            orientationEventListener_.enable();
         } else if (call.method.equals("switchDevice")) {
             final Map<String, Object> m = configuration;
             String d = (String)m.get("device");
@@ -291,6 +284,52 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             } catch (CameraAccessException e) {
             }
         } else if (call.method.equals("capture")) {
+            Map<String, Object> m = (Map)call.arguments;
+            Map<String, Object> size = (Map)m.get("size");
+            final String file = (String)m.get("path");
+            pictureImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+                    try (Image image = reader.acquireLatestImage()) {
+                        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                        try (FileOutputStream outputStream = new FileOutputStream(file)) {
+                            while (buffer.remaining() > 0) {
+                                outputStream.getChannel().write(buffer);
+                            }
+                        }
+                        channel_.invokeMethod("captureFinished", file);
+                    } catch (IOException e) {
+                    }
+                }
+            }, null);
+            try {
+                final CaptureRequest.Builder captureBuilder = cameraDevice
+                        .createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+                captureBuilder.addTarget(pictureImageReader.getSurface());
+                int rotation = activity_.getWindowManager().getDefaultDisplay().getRotation();
+                captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation(rotation));
+
+                cameraCaptureSession.capture(captureBuilder.build(), new CameraCaptureSession.CaptureCallback() {
+                    @Override
+                    public void onCaptureFailed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request,
+                                                @NonNull CaptureFailure failure) {
+                        String reason;
+                        switch (failure.getReason()) {
+                            case CaptureFailure.REASON_ERROR:
+                                reason = "An error happened in the framework";
+                                break;
+                            case CaptureFailure.REASON_FLUSHED:
+                                reason = "The capture has failed due to an abortCaptures() call";
+                                break;
+                            default:
+                                reason = "Unknown reason";
+                        }
+                        result.error("captureFailure", reason, null);
+                    }
+                }, null);
+            } catch (CameraAccessException e) {
+                result.error("cameraAccess", e.getMessage(), null);
+            }
         } else {
             result.notImplemented();
         }
@@ -327,14 +366,10 @@ public class PicterusCameraPlugin implements MethodCallHandler {
         double w = (double)s.get("width");
         double h = (double)s.get("height");
         previewSize = new Size((int)w, (int)h);
-        String focus = (String)arguments.get("focus");
-        double zoom = (double)arguments.get("zoomFactor");
         configuration = arguments;
 
         try {
             CameraCharacteristics characteristics = cameraManager_.getCameraCharacteristics(cameraName);
-            StreamConfigurationMap streamConfigurationMap =
-                    characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
             if (cameraPermissionContinuation_ != null) {
                 result.error("cameraPermission", "Camera permission request ongoing", null);
@@ -382,8 +417,6 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             }
         } else {
             try {
-                imageStreamReader = ImageReader.newInstance(
-                                previewSize.getWidth(), previewSize.getHeight(), ImageFormat.YUV_420_888, 2);
                 cameraManager_.openCamera(
                         cameraName,
                         new CameraDevice.StateCallback() {
@@ -463,9 +496,9 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             cameraDevice.close();
             cameraDevice = null;
         }
-        if (imageStreamReader != null) {
-            imageStreamReader.close();
-            imageStreamReader = null;
+        if (pictureImageReader != null) {
+            pictureImageReader.close();
+            pictureImageReader = null;
         }
     }
 
@@ -477,14 +510,14 @@ public class PicterusCameraPlugin implements MethodCallHandler {
         SurfaceTexture surfaceTexture = view.getSurfaceTexture();
         surfaceTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
         captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+        pictureImageReader = ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(), ImageFormat.JPEG, 2);
 
         List<Surface> surfaces = new ArrayList<>();
 
         Surface previewSurface = new Surface(surfaceTexture);
         surfaces.add(previewSurface);
+        surfaces.add(pictureImageReader.getSurface());
         captureRequestBuilder.addTarget(previewSurface);
-
-        surfaces.add(imageStreamReader.getSurface());
 
         cameraDevice.createCaptureSession(
                 surfaces,
@@ -535,12 +568,14 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                 == PackageManager.PERMISSION_GRANTED;
     }
 
+    private int getOrientation(int rotation) {
+        return (ORIENTATIONS.get(rotation) + sensorOrientation + 270) % 360;
+    }
     private Context context_;
     private Registrar registrar_;
     private Activity activity_;
     private CameraManager cameraManager_;
-    private final OrientationEventListener orientationEventListener_;
-    private int currentOrientation_ = ORIENTATION_UNKNOWN;
+    private MethodChannel channel_;
     private Runnable cameraPermissionContinuation_;
     private boolean requestingPermission_;
     private Application.ActivityLifecycleCallbacks activityLifecycleCallbacks_;
@@ -550,9 +585,18 @@ public class PicterusCameraPlugin implements MethodCallHandler {
     private CameraDevice cameraDevice;
     private CameraCaptureSession cameraCaptureSession;
     private CaptureRequest.Builder captureRequestBuilder;
-    private ImageReader imageStreamReader;
+    private ImageReader pictureImageReader;
     private int sensorOrientation;
     private String cameraName;
     private Size previewSize;
     private Map<String, Object> configuration;
+    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+
+    static {
+        ORIENTATIONS.append(Surface.ROTATION_0, 90);
+        ORIENTATIONS.append(Surface.ROTATION_90, 0);
+        ORIENTATIONS.append(Surface.ROTATION_180, 270);
+        ORIENTATIONS.append(Surface.ROTATION_270, 180);
+    }
+
 }

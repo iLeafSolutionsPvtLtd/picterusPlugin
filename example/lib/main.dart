@@ -68,7 +68,7 @@ class _MyAppState extends State<MyApp> {
     }
 
     Future<void> captureButtonClicked() async {
-        final path = (await getTemporaryDirectory()).path + "/capture.jpg";
+        final path = (await getTemporaryDirectory()).path + "/" + _camera.configuration.device.toNative + "_capture.jpg";
         final size = (await _camera.configuration.device.sizes).last;
         _camera.capture(CaptureConfiguration(size, FlashlightMode.off(), path), (String path) {
             setState(() {
