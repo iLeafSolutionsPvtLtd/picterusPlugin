@@ -67,20 +67,18 @@ class FocusMode {
 }
 
 class CaptureConfiguration {
-    Size size;
     FlashlightMode flashlightMode;
     String path;
 
-    CaptureConfiguration(this.size, this.flashlightMode, this.path);
+    CaptureConfiguration(this.flashlightMode, this.path);
 
-    CaptureConfiguration.path(String path) : this(Size.zero(), FlashlightMode.auto(), path);
+    CaptureConfiguration.path(String path) : this(FlashlightMode.auto(), path);
 
     CaptureConfiguration.fromNative(Map<String, dynamic> m)
-            : this(Size.fromNative(m['size']), FlashlightMode.fromNative(m['flashlightMode']), m['path']);
+            : this(FlashlightMode.fromNative(m['flashlightMode']), m['path']);
 
     Map<String, dynamic> get toNative {
         return <String, dynamic>{
-            'size': size.toNative,
             'flashlightMode': flashlightMode.toNative,
             'path': path
         };
@@ -90,6 +88,6 @@ class CaptureConfiguration {
         Size size,
         FlashlightMode flashlightMode,
         String path}) {
-        return CaptureConfiguration(size ?? this.size, flashlightMode ?? this.flashlightMode, path ?? this.path);
+        return CaptureConfiguration(flashlightMode ?? this.flashlightMode, path ?? this.path);
     }
 }

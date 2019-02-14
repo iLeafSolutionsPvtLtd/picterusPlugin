@@ -285,8 +285,8 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             }
         } else if (call.method.equals("capture")) {
             Map<String, Object> m = (Map)call.arguments;
-            Map<String, Object> size = (Map)m.get("size");
             final String file = (String)m.get("path");
+            final String flashMode = (String)m.get("flashMode");
             pictureImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -308,7 +308,9 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                 captureBuilder.addTarget(pictureImageReader.getSurface());
                 int rotation = activity_.getWindowManager().getDefaultDisplay().getRotation();
                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation(rotation));
-
+                if (flashMode.isEqual("auto")) {
+                    captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+                }
                 cameraCaptureSession.capture(captureBuilder.build(), new CameraCaptureSession.CaptureCallback() {
                     @Override
                     public void onCaptureFailed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request,
