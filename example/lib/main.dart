@@ -29,6 +29,10 @@ class _MyAppState extends State<MyApp> {
         initPlatformState();
     }
 
+    double abs(double x) {
+        return x < 0.0 ? -x : x;
+    }
+
     Future<void> initPlatformState() async {
         String text = '';
         double z = 1.0;
@@ -36,7 +40,21 @@ class _MyAppState extends State<MyApp> {
             final devices = await Device.devices;
             final d = Device.front();
             if (devices.contains(d)) {
-                final s = (await d.sizes)[0];
+                final ss = (await d.sizes);
+                Size sm = ss[0];
+                ss.forEach((f) {
+                    if (f.width * f.height > sm.width * sm.height) {
+                        sm = f;
+                    }
+                });
+                sm.width /= 2;
+                sm.height /= 2;
+                Size s = ss[0];
+                ss.forEach((f) {
+                    if (abs(f.width * f.height - sm.width * sm.height) < abs(s.width * s.height - sm.width * sm.height)) {
+                        s = f;
+                    }
+                });
                  z = await d.maxZoomFactor;
                 _camera = Camera();
                 _camera.initialize(PreviewConfiguration(d, s, FocusMode.auto(), 1.0));
@@ -61,9 +79,9 @@ class _MyAppState extends State<MyApp> {
         final text = await getInfo(_camera.configuration.device);
         final z = await _camera.configuration.device.maxZoomFactor;
         setState(() {
-          _zoomFactor = 1.0;
-          _text = text;
-          _maxZoomFactor = min(z, 16.0);
+            _zoomFactor = 1.0;
+            _text = text;
+            _maxZoomFactor = min(z, 16.0);
         });
     }
 

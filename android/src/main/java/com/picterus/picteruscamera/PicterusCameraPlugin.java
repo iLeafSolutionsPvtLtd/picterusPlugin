@@ -510,7 +510,20 @@ public class PicterusCameraPlugin implements MethodCallHandler {
         SurfaceTexture surfaceTexture = view.getSurfaceTexture();
         surfaceTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
         captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-        pictureImageReader = ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(), ImageFormat.JPEG, 2);
+        CameraCharacteristics cs = cameraManager_.getCameraCharacteristics(cameraName);
+        StreamConfigurationMap map = cs.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+        Size captureSize = previewSize;
+        if (map != null) {
+            Size[] sizes = map.getOutputSizes(ImageFormat.JPEG);
+            for (Size ss : sizes) {
+                if (ss.getWidth() > captureSize.getWidth()) {
+                    captureSize = ss;
+                } else if (ss.getWidth()== captureSize.getWidth() && ss.getHeight() > captureSize.getHeight()) {
+                    captureSize = ss;
+                }
+            }
+        }
+        pictureImageReader = ImageReader.newInstance(captureSize.getWidth(), captureSize.getHeight(), ImageFormat.JPEG, 2);
 
         List<Surface> surfaces = new ArrayList<>();
 
