@@ -38,6 +38,15 @@ class Camera {
         }
     }
 
+    Future<Size> get sensorSize async {
+        try {
+            final Map<dynamic, dynamic> s = await NativeBridge.instance.invokeMethod('sensorSize');
+            return Size.fromNative(s);
+        } on PlatformException catch (e) {
+            throw CameraException(e.code, e.message);
+        }
+    }
+
     Future<void> switchDevice() async {
         try {
             NativeBridge.instance.invokeMethod('switchDevice');

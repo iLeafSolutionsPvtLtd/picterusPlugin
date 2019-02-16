@@ -77,6 +77,8 @@ namespace {
         [self changeZoomFactor:[call arguments] result:result];
     } else if ([@"capture" isEqualToString:call.method]) {
         [self capture:[call arguments] result:result];
+    } else if ([@"sensorSize" isEqualToString:call.method]) {
+        [self sensorSize:[call arguments] result:result];
     } else {
         result(FlutterMethodNotImplemented);
     }
@@ -222,6 +224,9 @@ namespace {
     }
     photoSettings.highResolutionPhotoEnabled = YES;
     [photoOutput_ capturePhotoWithSettings:photoSettings delegate:self];
+}
+
+-(void) sensorSize:(NSDictionary*)arguments result:(FlutterResult)result {
 }
 
 -(void) captureOutput:(AVCapturePhotoOutput *)output didFinishProcessingPhoto:(AVCapturePhoto *)photo error:(NSError *)error  API_AVAILABLE(ios(11.0)) {

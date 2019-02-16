@@ -265,15 +265,15 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             m.put("device", d == "back" ? "front" : "back");
             initializeCamera(m, result);
         } else if (call.method.equals("changeZoomFactor")) {
-            double z = (double)call.arguments;
+            zoomFactor = (double)call.arguments;
             try {
                 captureRequestBuilder.set(
                         CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
                 CameraCharacteristics characteristics = cameraManager_.getCameraCharacteristics(cameraName);
                 Rect m = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
 
-                int w = (int)(m.width() / z);
-                int h = (int)(m.height() / z);
+                int w = (int)(m.width() / zoomFactor);
+                int h = (int)(m.height() / zoomFactor);
                 w -= w & 3;
                 h -= h & 3;
                 Point c = new Point(m.centerX(), m.centerY());
@@ -286,7 +286,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
         } else if (call.method.equals("capture")) {
             Map<String, Object> m = (Map)call.arguments;
             final String file = (String)m.get("path");
-            final String flashMode = (String)m.get("flashMode");
+            final String flashMode = (String)m.get("flashlightMode");
             pictureImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -308,9 +308,25 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                 captureBuilder.addTarget(pictureImageReader.getSurface());
                 int rotation = activity_.getWindowManager().getDefaultDisplay().getRotation();
                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation(rotation));
-                if (flashMode.isEqual("auto")) {
+                captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, captureRequestBuilder.get(CaptureRequest.CONTROL_AF_MODE));
+                if (flashMode.equals("auto")) {
                     captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+                } else if (flashMode.equals("auto")) {
+                    captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_ALWAYS_FLASH);
+                } else {
+                    captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
                 }
+                CameraCharacteristics characteristics = cameraManager_.getCameraCharacteristics(cameraName);
+                Rect mm = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                int w = (int)(mm.width() / zoomFactor);
+                int h = (int)(mm.height() / zoomFactor);
+                w -= w & 3;
+                h -= h & 3;
+                Point c = new Point(mm.centerX(), mm.centerY());
+
+                Rect zoom = new Rect(c.x - w / 2, c.y - h / 2, c.x + w / 2, c.y + h / 2);
+                captureBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoom);
                 cameraCaptureSession.capture(captureBuilder.build(), new CameraCaptureSession.CaptureCallback() {
                     @Override
                     public void onCaptureFailed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request,
@@ -332,6 +348,8 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             } catch (CameraAccessException e) {
                 result.error("cameraAccess", e.getMessage(), null);
             }
+        } else if (call.method.equals("sensorSize")) {
+            /// TODO
         } else {
             result.notImplemented();
         }
@@ -602,6 +620,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
     private CaptureRequest.Builder captureRequestBuilder;
     private ImageReader pictureImageReader;
     private int sensorOrientation;
+    private double zoomFactor = 1.0;
     private String cameraName;
     private Size previewSize;
     private Map<String, Object> configuration;
