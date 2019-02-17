@@ -214,7 +214,7 @@ namespace {
     photoOutputConnection.videoOrientation = AVCaptureVideoOrientationLandscapeRight;
     AVCapturePhotoSettings* photoSettings = [AVCapturePhotoSettings photoSettings];
     capturePath_ = (NSString*)[arguments objectForKey:@"path"];
-    NSString* fn = (NSString*)[arguments objectForKey:@"flashMode"];
+    NSString* fn = (NSString*)[arguments objectForKey:@"flashlightMode"];
     if ([fn isEqualToString: @"auto"]) {
         photoSettings.flashMode = AVCaptureFlashModeAuto;
     } else if ([fn isEqualToString: @"on"]) {

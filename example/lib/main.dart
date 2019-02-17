@@ -19,6 +19,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
     String _text = '';
     Camera _camera;
+    List<FlashlightMode> _flashModes;
+    FlashlightMode _flashMode;
     double _maxZoomFactor = 1.0;
     double _zoomFactor = 1.0;
     String _imagePath = '';
@@ -35,6 +37,7 @@ class _MyAppState extends State<MyApp> {
 
     Future<void> initPlatformState() async {
         String text = '';
+        List<FlashlightMode> fm;
         double z = 1.0;
         try {
             final devices = await Device.devices;
@@ -58,10 +61,11 @@ class _MyAppState extends State<MyApp> {
                  z = await d.maxZoomFactor;
                 _camera = Camera();
                 _camera.initialize(PreviewConfiguration(d, s, FocusMode.auto(), 1.0));
+                fm = await _camera.flashlightModes;
             }
             text = await getInfo(d);
         } on PlatformException {
-            text = 'Failed to get platform version.';
+            text = 'Failed to initialize camera.';
         }
 
         if (!mounted) {
@@ -70,6 +74,8 @@ class _MyAppState extends State<MyApp> {
 
         setState(() {
             _text = text;
+            _flashMode = fm[0];
+            _flashModes = fm;
             _maxZoomFactor = min(z, 16.0);
         });
     }
@@ -78,7 +84,10 @@ class _MyAppState extends State<MyApp> {
         _camera.switchDevice();
         final text = await getInfo(_camera.configuration.device);
         final z = await _camera.configuration.device.maxZoomFactor;
+        final fm = await _camera.flashlightModes;
         setState(() {
+            _flashModes = fm;
+            _flashMode =_flashModes.first;
             _zoomFactor = 1.0;
             _text = text;
             _maxZoomFactor = min(z, 16.0);
@@ -87,7 +96,7 @@ class _MyAppState extends State<MyApp> {
 
     Future<void> captureButtonClicked() async {
         final path = (await getTemporaryDirectory()).path + "/" + _camera.configuration.device.toNative + "_capture.jpg";
-        _camera.capture(CaptureConfiguration(FlashlightMode.off(), path), (String path) {
+        _camera.capture(CaptureConfiguration(_flashMode, path), (String path) {
             setState(() {
                 _imagePath = path;
             });
@@ -100,6 +109,12 @@ class _MyAppState extends State<MyApp> {
         setState(() {
             _zoomFactor = value * value;
         });
+    }
+
+    void flashModeChanged(FlashlightMode m) {
+      setState(() {
+          _flashMode = m;
+      });
     }
 
     @override
@@ -127,15 +142,24 @@ class _MyAppState extends State<MyApp> {
                                     ),
                                     Text('Zoom'),
                                     Slider(onChanged: zoomChanged, min: 1.0, max: sqrt(_maxZoomFactor), value: sqrt(_zoomFactor)),
+                                    Text('Flash Mode'),
+                                    _flashMode != null ? DropdownButton<FlashlightMode>(items: _flashModes.map((value) {
+                                            return new DropdownMenuItem<FlashlightMode>(
+                                                value: value,
+                                                child: new Text(value.toNative),
+                                            );
+                                        }).toList(),
+                                        value: _flashMode,
+                                        onChanged: flashModeChanged
+                                    ) : Text('Initializing'),
                                     _imagePath == '' ? Center(child: Text('No image to show')) : Image.file(File(_imagePath)),
                                     Text(_text,
                                     style: TextStyle(
                                             color: Colors.cyan,
                                             fontWeight: FontWeight.bold),
                                     textAlign: TextAlign.center),
-                                ],
-                        ),
-                ),
+                                ]),
+                )
         );
     }
 
