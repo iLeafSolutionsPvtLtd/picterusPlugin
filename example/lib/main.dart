@@ -140,9 +140,17 @@ class _MyAppState extends State<MyApp> {
                                         highlightColor: Color(0xFF00FFFF),
                                         onPressed: captureButtonClicked
                                     ),
-                                    Text('Zoom'),
+                                    Text('Zoom',
+                                        style: TextStyle(
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.bold),
+                                    ),
                                     Slider(onChanged: zoomChanged, min: 1.0, max: sqrt(_maxZoomFactor), value: sqrt(_zoomFactor)),
-                                    Text('Flash Mode'),
+                                    Text('Flash Mode',
+                                        style: TextStyle(
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.bold),
+                                    ),
                                     _flashMode != null ? DropdownButton<FlashlightMode>(items: _flashModes.map((value) {
                                             return new DropdownMenuItem<FlashlightMode>(
                                                 value: value,
