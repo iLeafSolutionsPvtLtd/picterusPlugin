@@ -382,7 +382,6 @@
 					"-l\"picterus_camera\"",
 					"-framework",
 					"\"Flutter\"",
-					"-lc++",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
