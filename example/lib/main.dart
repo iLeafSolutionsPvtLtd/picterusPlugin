@@ -24,6 +24,8 @@ class _MyAppState extends State<MyApp> {
     double _maxZoomFactor = 1.0;
     double _zoomFactor = 1.0;
     String _imagePath = '';
+    bool _isStreaming = false;
+    int _buffer = 0;
 
     @override
     void initState() {
@@ -103,6 +105,21 @@ class _MyAppState extends State<MyApp> {
         });
     }
 
+    Future<void> streamButtonClicked() async {
+        if (_isStreaming) {
+            _camera.stopStreaming();
+        } else {
+            _camera.startStreaming((ImageData image) {
+                setState(() {
+                    _buffer = image.buffer;
+                });
+            });
+        }
+        setState(() {
+            _isStreaming = !_isStreaming;
+        });
+    }
+
     void zoomChanged(double value) {
         _zoomFactor = value * value;
         _camera.changeZoomFactor(_zoomFactor);
@@ -139,6 +156,13 @@ class _MyAppState extends State<MyApp> {
                                         color: Color(0xFF0000FF),
                                         highlightColor: Color(0xFF00FFFF),
                                         onPressed: captureButtonClicked
+                                    ),
+                                    Text(_buffer.toString()),
+                                    FlatButton(
+                                        child: Text(_isStreaming ? 'Stop' : 'Stream'),
+                                        color: Color(0xFF0000FF),
+                                        highlightColor: Color(0xFF00FFFF),
+                                        onPressed: streamButtonClicked
                                     ),
                                     Text('Zoom',
                                         style: TextStyle(

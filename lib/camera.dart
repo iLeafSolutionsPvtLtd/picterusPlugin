@@ -11,6 +11,7 @@ part 'configuration.dart';
 part 'device.dart';
 part 'exception.dart';
 part 'geometry.dart';
+part 'image.dart';
 
 class Camera {
     Camera() {
@@ -74,10 +75,33 @@ class Camera {
         }
     }
 
+    Future<void> startStreaming(Function(ImageData) streamCompletion) async {
+        try {
+            _streamCompletion = streamCompletion;
+            NativeBridge.instance.invokeMethod('startStreaming');
+        } on PlatformException catch (e) {
+            throw CameraException(e.code, e.message);
+        }
+    }
+
+    Future<void> stopStreaming() async {
+        try {
+            _streamCompletion = null;
+            NativeBridge.instance.invokeMethod('stopStreaming');
+        } on PlatformException catch (e) {
+            throw CameraException(e.code, e.message);
+        }
+    }
+
     Future<dynamic> _nativeHandler(MethodCall call) async {
         switch (call.method) {
             case 'captureFinished':
                 _captureCompletion(call.arguments);
+                break;
+            case 'frameStreamed':
+                if (_streamCompletion != null) {
+                    _streamCompletion(ImageData.fromNative(call.arguments));
+                }
                 break;
             default:
                 break;
@@ -88,4 +112,5 @@ class Camera {
     CameraView cameraView;
     PreviewConfiguration configuration;
     Function(String) _captureCompletion;
+    Function(ImageData) _streamCompletion;
 }

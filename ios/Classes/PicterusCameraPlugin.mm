@@ -9,10 +9,11 @@
 
 static PicterusCameraPlugin* sharedInstance_ = nullptr;
 
-@interface PicterusCameraPlugin() <AVCapturePhotoCaptureDelegate> {
+@interface PicterusCameraPlugin() <AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutputSampleBufferDelegate> {
 @private PicterusCameraView* preview_;
 @private AVCaptureSession* session_;
 @private AVCapturePhotoOutput* photoOutput_;
+@private AVCaptureVideoDataOutput* videoDataOutput_;
 @private FlutterMethodChannel* channel_;
 @private NSString* capturePath_;
 }
@@ -79,6 +80,10 @@ namespace {
         [self capture:[call arguments] result:result];
     } else if ([@"sensorSize" isEqualToString:call.method]) {
         [self sensorSize:[call arguments] result:result];
+    } else if ([@"startStreaming" isEqualToString:call.method]) {
+        [self startStreaming:[call arguments] result:result];
+    } else if ([@"stopStreaming" isEqualToString:call.method]) {
+        [self stopStreaming:[call arguments] result:result];
     } else {
         result(FlutterMethodNotImplemented);
     }
@@ -165,19 +170,13 @@ namespace {
     NSString* dev = [arguments objectForKey:@"device"];
     auto d = deviceFromString(dev);
     auto i = [[AVCaptureDeviceInput alloc] initWithDevice:d error:nil];
-    auto o = [AVCaptureVideoDataOutput new];
-    o.videoSettings =
-    @{(NSString *)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_32BGRA)};
-    [o setAlwaysDiscardsLateVideoFrames:YES];
     [session_ addInput:i];
-    [session_ addOutput:o];
     AVCapturePhotoOutput* photoOutput = [[AVCapturePhotoOutput alloc] init];
     if ([session_ canAddOutput:photoOutput]) {
         [session_ addOutput:photoOutput];
         photoOutput_ = photoOutput;
         photoOutput_.highResolutionCaptureEnabled = YES;
     }
-
     if (preview_ != nullptr) {
         preview_.previewLayer = [[AVCaptureVideoPreviewLayer alloc] initWithSession:session_];
         preview_.previewLayer.videoGravity = AVLayerVideoGravityResizeAspect;
@@ -222,11 +221,48 @@ namespace {
     } else {
         photoSettings.flashMode = AVCaptureFlashModeOff;
     }
+    if (@available(iOS 11.0, *)) {
+        if (photoOutput_.isCameraCalibrationDataDeliverySupported) {
+        //    photoSettings.isCameraCalibrationDataDeliveryEnabled = true;
+        }
+    }
     photoSettings.highResolutionPhotoEnabled = YES;
     [photoOutput_ capturePhotoWithSettings:photoSettings delegate:self];
 }
 
 -(void) sensorSize:(NSDictionary*)arguments result:(FlutterResult)result {
+    NSMutableArray<NSString*> *reply =
+    [[NSMutableArray alloc] initWithCapacity:3];
+    auto d = ((AVCaptureDeviceInput*)[session_.inputs objectAtIndex:0]).device;
+    auto f = d.activeFormat.formatDescription;
+    auto s = CMVideoFormatDescriptionGetDimensions(f);
+}
+
+-(void) startStreaming:(NSDictionary*)arguments result:(FlutterResult)result {
+    videoDataOutput_ = [AVCaptureVideoDataOutput new];
+    videoDataOutput_.videoSettings =
+    @{(NSString *)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_32BGRA)};
+    [videoDataOutput_ setAlwaysDiscardsLateVideoFrames:YES];
+    [videoDataOutput_ setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
+    [session_ addOutput:videoDataOutput_];
+    [session_ commitConfiguration];
+}
+
+-(void) stopStreaming:(NSDictionary*)arguments result:(FlutterResult)result {
+    [session_ removeOutput:videoDataOutput_];
+    videoDataOutput_ = nullptr;
+    [session_ commitConfiguration];
+}
+
+-(void) captureOutput:(AVCaptureOutput *)output didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
+    auto b = CMSampleBufferGetImageBuffer(sampleBuffer);
+    if (b == nullptr) {
+        return;
+    }
+    [channel_ invokeMethod:@"frameStreamed" arguments:@{
+                                                        @"buffer": [NSNumber numberWithInteger: reinterpret_cast<long>(b)],
+                                                        @"rotation": [NSNumber numberWithInt:90]
+                                                        }];
 }
 
 -(void) captureOutput:(AVCapturePhotoOutput *)output didFinishProcessingPhoto:(AVCapturePhoto *)photo error:(NSError *)error  API_AVAILABLE(ios(11.0)) {
@@ -245,4 +281,9 @@ namespace {
 -(void) captureOutput:(AVCapturePhotoOutput *)output didFinishProcessingPhotoSampleBuffer:(CMSampleBufferRef)photoSampleBuffer previewPhotoSampleBuffer:(CMSampleBufferRef)previewPhotoSampleBuffer resolvedSettings:(AVCaptureResolvedPhotoSettings *)resolvedSettings bracketSettings:(AVCaptureBracketedStillImageSettings *)bracketSettings error:(NSError *)error {
     /// TODO For ios 10.
 }
+
+-(CVPixelBufferRef) pixelBuffer: (NSInteger) id {
+    return reinterpret_cast<CVPixelBufferRef>(id);
+}
+
 @end
