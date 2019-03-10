@@ -62,7 +62,11 @@ public class PicterusCameraPlugin implements MethodCallHandler {
         }
     }
 
-    static PicterusCameraPlugin sharedInstance;
+    static PicterusCameraPlugin sharedInstance_;
+
+    static public PicterusCameraPlugin sharedInstance() {
+        return sharedInstance_;
+    }
 
     private PicterusCameraPlugin(Registrar registrar) {
         registrar_ = registrar;
@@ -123,9 +127,9 @@ public class PicterusCameraPlugin implements MethodCallHandler {
 
     /** Plugin registration. */
     public static void registerWith(Registrar registrar) {
-        sharedInstance = new PicterusCameraPlugin(registrar);
-        sharedInstance.channel_ = new MethodChannel(registrar.messenger(), "camera.picterus.com");
-        sharedInstance.channel_.setMethodCallHandler(sharedInstance);
+        sharedInstance_ = new PicterusCameraPlugin(registrar);
+        sharedInstance_.channel_ = new MethodChannel(registrar.messenger(), "camera.picterus.com");
+        sharedInstance_.channel_.setMethodCallHandler(sharedInstance_);
         registrar.platformViewRegistry().registerViewFactory("CameraView", new PicterusCameraViewFactory());
     }
 
