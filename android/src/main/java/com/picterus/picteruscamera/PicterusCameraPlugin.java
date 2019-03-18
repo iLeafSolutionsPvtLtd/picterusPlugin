@@ -359,45 +359,10 @@ public class PicterusCameraPlugin implements MethodCallHandler {
         } else if (call.method.equals("sensorSize")) {
             /// TODO
         } else if (call.method.equals("startStreaming")) {
-            try {
-                if (streamBuilder == null) {
-                    streamImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
-                        @Override
-                        public void onImageAvailable(ImageReader reader) {
-                            Image image = reader.acquireLatestImage();
-                            if (image != null) {
-                                HashMap<String, Integer> args = new HashMap<>();
-                                args.put("buffer", 1);
-                                args.put("rotation", 90);
-                                lastStreamFrame = image;
-                                channel_.invokeMethod("frameStreamed", args);
-                                lastStreamFrame = null;
-                                image.close();
-                            }
-                        }
-                    }, null);
-                    streamBuilder = cameraDevice
-                            .createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                    streamBuilder.addTarget(streamImageReader.getSurface());
-                    int rotation = activity_.getWindowManager().getDefaultDisplay().getRotation();
-                    streamBuilder.addTarget(streamImageReader.getSurface());
-                    streamBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation(rotation));
-                    streamBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-                    CameraCharacteristics characteristics = cameraManager_.getCameraCharacteristics(cameraName);
-                    Rect mm = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
-                    int w = (int) (mm.width() / zoomFactor);
-                    int h = (int) (mm.height() / zoomFactor);
-                    w -= w & 3;
-                    h -= h & 3;
-                    Point c = new Point(mm.centerX(), mm.centerY());
-
-                    Rect zoom = new Rect(c.x - w / 2, c.y - h / 2, c.x + w / 2, c.y + h / 2);
-                    streamBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoom);
-                }
-                List<CaptureRequest> rs = Arrays.asList(previewBuilder.build(), streamBuilder.build());
-                cameraCaptureSession.setRepeatingBurst(rs, null, null);
-            } catch (CameraAccessException e) {
-                result.error("cameraAccess", e.getMessage(), null);
+            if (streamImageReader != null) {
+                startStreaming(result);
+            } else {
+                needsStreaming_ = true;
             }
         } else if (call.method.equals("stopStreaming")) {
             try {
@@ -502,8 +467,9 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                                     try {
                                         startPreview();
                                     } catch (CameraAccessException e) {
-                                        if (result != null)
+                                        if (result != null) {
                                             result.error("CameraAccess", e.getMessage(), null);
+                                        }
                                         cameraDevice.close();
                                         PicterusCameraPlugin.this.cameraDevice = null;
                                         return;
@@ -603,7 +569,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             }
         }
         pictureImageReader = ImageReader.newInstance(captureSize.getWidth(), captureSize.getHeight(), ImageFormat.JPEG, 2);
-        streamImageReader = ImageReader.newInstance(captureSize.getWidth(), captureSize.getHeight(), ImageFormat.JPEG, 2);
+        streamImageReader = ImageReader.newInstance(captureSize.getWidth(), captureSize.getHeight(), ImageFormat.YUV_420_888, 2);
 
         List<Surface> surfaces = new ArrayList<>();
 
@@ -631,7 +597,11 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                             }
                             cameraCaptureSession = session;
                             previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-                            cameraCaptureSession.setRepeatingRequest(previewBuilder.build(), null, null);
+                            if (needsStreaming_) {
+                                startStreaming(null);
+                            } else {
+                                cameraCaptureSession.setRepeatingRequest(previewBuilder.build(), null, null);
+                            }
                         } catch (CameraAccessException e) {
                         }
                     }
@@ -641,6 +611,48 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                     }
                 },
                 null);
+    }
+
+    private void startStreaming(final Result result) {
+        try {
+            streamImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+                    /*Image image = reader.acquireLatestImage();
+                    if (image != null) {
+                        HashMap<String, Integer> args = new HashMap<>();
+                        args.put("buffer", 1);
+                        args.put("rotation", 90);
+                        lastStreamFrame = image;
+                        channel_.invokeMethod("frameStreamed", args);
+                        lastStreamFrame = null;
+                        image.close();
+                    }*/
+                }
+            }, null);
+            streamBuilder = cameraDevice
+                    .createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            int rotation = activity_.getWindowManager().getDefaultDisplay().getRotation();
+            streamBuilder.addTarget(streamImageReader.getSurface());
+            streamBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation(rotation));
+            streamBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+            CameraCharacteristics characteristics = cameraManager_.getCameraCharacteristics(cameraName);
+            Rect mm = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+            int w = (int) (mm.width() / zoomFactor);
+            int h = (int) (mm.height() / zoomFactor);
+            w -= w & 3;
+            h -= h & 3;
+            Point c = new Point(mm.centerX(), mm.centerY());
+
+            Rect zoom = new Rect(c.x - w / 2, c.y - h / 2, c.x + w / 2, c.y + h / 2);
+            streamBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoom);
+            List<CaptureRequest> rs = Arrays.asList(previewBuilder.build(), streamBuilder.build());
+            cameraCaptureSession.setRepeatingBurst(rs, null, null);
+        } catch (CameraAccessException e) {
+            if (result != null) {
+                result.error("cameraAccess", e.getMessage(), null);
+            }
+        }
     }
 
     private void closeCaptureSession() {
@@ -665,6 +677,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
     private int getOrientation(int rotation) {
         return (ORIENTATIONS.get(rotation) + sensorOrientation + 270) % 360;
     }
+
     private Context context_;
     private Registrar registrar_;
     private Activity activity_;
@@ -685,6 +698,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
     private Image lastStreamFrame;
     private int sensorOrientation;
     private double zoomFactor = 1.0;
+    private boolean needsStreaming_ = false;
     private String cameraName;
     private Size previewSize;
     private Map<String, Object> configuration;

@@ -32,6 +32,7 @@ static PicterusCameraPlugin* sharedInstance_ = nullptr;
 }
 
 namespace {
+
     AVCaptureDevice* deviceFromString(NSString* s) {
         auto p = AVCaptureDevicePositionBack;
         if ([s isEqualToString:@"front"]) {
@@ -259,8 +260,21 @@ namespace {
     if (b == nullptr) {
         return;
     }
+    CVPixelBufferLockBaseAddress(b, 0);
+    int bufferWidth = (int)CVPixelBufferGetWidth(b);
+    int bufferHeight = (int)CVPixelBufferGetHeight(b);
+    size_t bytesPerRow = CVPixelBufferGetBytesPerRow(b);
+    uint8_t *baseAddress = (uint8_t*)CVPixelBufferGetBaseAddress(b);
+
+    CVPixelBufferRef pixelBufferCopy = nullptr;
+    CVPixelBufferCreate(kCFAllocatorDefault, bufferWidth, bufferHeight, kCVPixelFormatType_32BGRA, NULL, &pixelBufferCopy);
+    CVPixelBufferLockBaseAddress(pixelBufferCopy, 0);
+    uint8_t *copyBaseAddress = (uint8_t*)CVPixelBufferGetBaseAddress(pixelBufferCopy);
+    memcpy(copyBaseAddress, baseAddress, bufferHeight * bytesPerRow);
+    CVPixelBufferUnlockBaseAddress(b, 0);
+    CVPixelBufferUnlockBaseAddress(pixelBufferCopy, 0);
     [channel_ invokeMethod:@"frameStreamed" arguments:@{
-                                                        @"buffer": [NSNumber numberWithInteger: reinterpret_cast<long>(b)],
+                                                        @"buffer": [NSNumber numberWithInteger: reinterpret_cast<long>(pixelBufferCopy)],
                                                         @"rotation": [NSNumber numberWithInt:90]
                                                         }];
 }
