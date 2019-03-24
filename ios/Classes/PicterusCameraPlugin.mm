@@ -242,7 +242,7 @@ namespace {
 -(void) startStreaming:(NSDictionary*)arguments result:(FlutterResult)result {
     videoDataOutput_ = [AVCaptureVideoDataOutput new];
     videoDataOutput_.videoSettings =
-    @{(NSString *)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_32BGRA)};
+    @{(NSString *)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)};
     [videoDataOutput_ setAlwaysDiscardsLateVideoFrames:YES];
     [videoDataOutput_ setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
     [session_ addOutput:videoDataOutput_];
