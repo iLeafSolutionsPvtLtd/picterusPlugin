@@ -8,6 +8,8 @@ import android.app.Application;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -618,8 +620,11 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             streamImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
-                    /*Image image = reader.acquireLatestImage();
+                    Image image = reader.acquireLatestImage();
                     if (image != null) {
+                        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                        Bitmap bmpout = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.ALPHA_8);
+                        bmpout.copyPixelsFromBuffer(buffer);
                         HashMap<String, Integer> args = new HashMap<>();
                         args.put("buffer", 1);
                         args.put("rotation", 90);
@@ -627,7 +632,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                         channel_.invokeMethod("frameStreamed", args);
                         lastStreamFrame = null;
                         image.close();
-                    }*/
+                    }
                 }
             }, null);
             streamBuilder = cameraDevice
