@@ -13,6 +13,7 @@ build/
 android/.classpath
 android/.project
 android/.settings/
+android/.externalNativeBuild/
 example/android/.project
 example/android/.settings/
 example/android/app/.classpath

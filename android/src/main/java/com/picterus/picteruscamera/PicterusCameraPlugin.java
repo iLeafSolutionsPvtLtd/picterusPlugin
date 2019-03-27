@@ -625,9 +625,9 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                         ByteBuffer buffer = image.getPlanes()[0].getBuffer();
                         Bitmap bmpout = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.ALPHA_8);
                         bmpout.copyPixelsFromBuffer(buffer);
-                        HashMap<String, Integer> args = new HashMap<>();
-                        args.put("buffer", 1);
-                        args.put("rotation", 90);
+                        HashMap<String, Long> args = new HashMap<>();
+                        args.put("buffer", CoreEngine.storeBitmap(bmpout));
+                        args.put("rotation", 90l);
                         lastStreamFrame = image;
                         channel_.invokeMethod("frameStreamed", args);
                         lastStreamFrame = null;
