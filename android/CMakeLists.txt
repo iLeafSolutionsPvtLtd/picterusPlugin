@@ -10,8 +10,6 @@ cmake_minimum_required(VERSION 3.4.1)
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
 
-include_directories(src/main/cpp/core)
-
 file(GLOB JNI_SRCS
         "src/main/cpp/jni_layer.cpp"
         )
