@@ -99,9 +99,11 @@ class Camera {
                 _captureCompletion(call.arguments);
                 break;
             case 'frameStreamed':
+                final d = ImageData.fromNative(call.arguments);
                 if (_streamCompletion != null) {
-                    _streamCompletion(ImageData.fromNative(call.arguments));
+                    _streamCompletion(d);
                 }
+                NativeBridge.instance.invokeMethod('releaseFrame', d.buffer);
                 break;
             default:
                 break;

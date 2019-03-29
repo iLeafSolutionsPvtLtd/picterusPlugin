@@ -372,6 +372,8 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             } catch (CameraAccessException e) {
                 result.error("cameraAccess", e.getMessage(), null);
             }
+        } else if (call.method.equals("releaseFrame")) {
+            /// TODO
         } else {
             result.notImplemented();
         }

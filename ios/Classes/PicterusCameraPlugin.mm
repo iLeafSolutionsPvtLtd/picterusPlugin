@@ -85,6 +85,8 @@ namespace {
         [self startStreaming:[call arguments] result:result];
     } else if ([@"stopStreaming" isEqualToString:call.method]) {
         [self stopStreaming:[call arguments] result:result];
+    } else if ([@"releaseFrame" isEqualToString:call.method]) {
+        [self releaseFrame:[call arguments]];
     } else {
         result(FlutterMethodNotImplemented);
     }
@@ -253,6 +255,10 @@ namespace {
     [session_ removeOutput:videoDataOutput_];
     videoDataOutput_ = nullptr;
     [session_ commitConfiguration];
+}
+
+-(void) releaseFrame:(NSNumber*)arguments {
+    CFRelease(reinterpret_cast<CVPixelBufferRef>([arguments integerValue]));
 }
 
 -(void) captureOutput:(AVCaptureOutput *)output didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
