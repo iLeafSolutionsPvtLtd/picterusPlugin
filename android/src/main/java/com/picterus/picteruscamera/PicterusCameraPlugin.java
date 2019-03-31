@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -27,7 +26,6 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
@@ -129,7 +127,6 @@ public class PicterusCameraPlugin implements MethodCallHandler {
     }
 
     public Bitmap image(long id) {
-        Log.e("AAAAAAA", String.valueOf(id));
         return CoreEngine.getBitmap(id);
     }
 
@@ -379,7 +376,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                 result.error("cameraAccess", e.getMessage(), null);
             }
         } else if (call.method.equals("releaseFrame")) {
-            CoreEngine.releaseBitmap((int)call.arguments);
+            CoreEngine.releaseBitmap((long)call.arguments);
         } else {
             result.notImplemented();
         }
@@ -579,7 +576,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             }
         }
         pictureImageReader = ImageReader.newInstance(captureSize.getWidth(), captureSize.getHeight(), ImageFormat.JPEG, 2);
-        streamImageReader = ImageReader.newInstance(captureSize.getWidth(), captureSize.getHeight(), ImageFormat.YUV_420_888, 2);
+        streamImageReader = ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(), ImageFormat.YUV_420_888, 2);
 
         List<Surface> surfaces = new ArrayList<>();
 
