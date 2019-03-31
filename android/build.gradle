@@ -32,6 +32,9 @@ android {
                 cppFlags "-std=c++11 -frtti -fexceptions"
             }
         }
+        ndk {
+            abiFilters 'armeabi-v7a', 'x86', 'x86_64'
+        }
     }
     lintOptions {
         disable 'InvalidPackage'

@@ -27,6 +27,7 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
@@ -62,6 +63,10 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             }
             return false;
         }
+    }
+
+    static {
+        System.loadLibrary("picterus_camera_core");
     }
 
     static PicterusCameraPlugin sharedInstance_;
@@ -123,8 +128,9 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                 };
     }
 
-    public Image image(int id) {
-        return lastStreamFrame;
+    public Bitmap image(long id) {
+        Log.e("AAAAAAA", String.valueOf(id));
+        return CoreEngine.getBitmap(id);
     }
 
     /** Plugin registration. */
@@ -373,7 +379,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                 result.error("cameraAccess", e.getMessage(), null);
             }
         } else if (call.method.equals("releaseFrame")) {
-            /// TODO
+            CoreEngine.releaseBitmap((int)call.arguments);
         } else {
             result.notImplemented();
         }
@@ -567,7 +573,7 @@ public class PicterusCameraPlugin implements MethodCallHandler {
             for (Size ss : sizes) {
                 if (ss.getWidth() > captureSize.getWidth()) {
                     captureSize = ss;
-                } else if (ss.getWidth()== captureSize.getWidth() && ss.getHeight() > captureSize.getHeight()) {
+                } else if (ss.getWidth() == captureSize.getWidth() && ss.getHeight() > captureSize.getHeight()) {
                     captureSize = ss;
                 }
             }
@@ -628,11 +634,10 @@ public class PicterusCameraPlugin implements MethodCallHandler {
                         Bitmap bmpout = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.ALPHA_8);
                         bmpout.copyPixelsFromBuffer(buffer);
                         HashMap<String, Long> args = new HashMap<>();
-                        args.put("buffer", CoreEngine.storeBitmap(bmpout));
+                        Long vv = CoreEngine.storeBitmap(bmpout);
+                        args.put("buffer", vv);
                         args.put("rotation", 90l);
-                        lastStreamFrame = image;
                         channel_.invokeMethod("frameStreamed", args);
-                        lastStreamFrame = null;
                         image.close();
                     }
                 }
@@ -702,7 +707,6 @@ public class PicterusCameraPlugin implements MethodCallHandler {
     private CaptureRequest.Builder streamBuilder;
     private ImageReader pictureImageReader;
     private ImageReader streamImageReader;
-    private Image lastStreamFrame;
     private int sensorOrientation;
     private double zoomFactor = 1.0;
     private boolean needsStreaming_ = false;

@@ -4,5 +4,6 @@ import android.graphics.Bitmap;
 
 public class CoreEngine {
     native public static long storeBitmap(Bitmap b);
+    native public static void releaseBitmap(long b);
     native public static Bitmap getBitmap(long v);
 }
